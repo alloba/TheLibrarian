@@ -1,9 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"github.com/alloba/TheLibrarian/webserver"
 	"log"
 )
+
+type Env struct {
+	db *sql.DB
+}
 
 func main() {
 	log.Println("Initializing the Librarian")
