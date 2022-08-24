@@ -11,12 +11,12 @@ import (
 )
 
 // HttpMethod Explicit type matching for supported HTTP methods, to prevent typos.
-// Anything with this type is going to be directly matched to a method constant from net/http
+// Anything with this type is going to be directly matched to a Method constant from net/http
 type HttpMethod string
 
-// requestFunction Any function that needs to match the standard net/http request function interface.
+// RequestFunction Any function that needs to match the standard net/http request function interface.
 // This type is appropriate for both hooks and the endpoint operation itself.
-type requestFunction func(http.ResponseWriter, *http.Request)
+type RequestFunction func(http.ResponseWriter, *http.Request)
 
 // HTTP methods allowed for endpoints.
 // These map directly to methods defined in net/http and are mainly for convenience.
@@ -27,30 +27,30 @@ const (
 	DELETE HttpMethod = http.MethodDelete
 )
 
-// endpointMarker A container for endpoint information.
-// This struct provides enough information to merge multiple request functions onto a single endpoint (by path + method)
-type endpointMarker struct {
-	path             string
-	method           HttpMethod
-	endpointFunction requestFunction
+// Endpoint A container for endpoint information.
+// This struct provides enough information to merge multiple request functions onto a single endpoint (by Path + Method)
+type Endpoint struct {
+	Path             string
+	Method           HttpMethod
+	EndpointFunction RequestFunction
 }
 
 // ServerManager manages all information required to configure and run a webserver.
 // This includes all relevant configuration as well as any registered hooks and endpoint functions.
 type ServerManager struct {
-	serverPort      string                      // serverPort which port the server will run on.
-	preHandleChain  []requestFunction           // preHandleChain a list of functions that are run before any endpoint request
-	postHandleChain []requestFunction           // postHandleChain a list of functions that are run after any endpoint request
-	endpoints       map[string][]endpointMarker //endpoints all registered endpoints, organized by path string
+	serverPort      string                // serverPort which port the server will run on.
+	preHandleChain  []RequestFunction     // preHandleChain a list of functions that are run before any endpoint request
+	postHandleChain []RequestFunction     // postHandleChain a list of functions that are run after any endpoint request
+	endpoints       map[string][]Endpoint //endpoints all registered endpoints, organized by Path string
 }
 
 // New will instantiate a new instance of ServerManager
 func New() ServerManager {
-	return ServerManager{":8080", make([]requestFunction, 0), make([]requestFunction, 0), make(map[string][]endpointMarker, 0)}
+	return ServerManager{":8080", make([]RequestFunction, 0), make([]RequestFunction, 0), make(map[string][]Endpoint, 0)}
 }
 
 // Start triggers the webserver.
-// This merges all pre- and post-request functions with all HTTP method functions, and invokes http.ListenAndServe
+// This merges all pre- and post-request functions with all HTTP Method functions, and invokes http.ListenAndServe
 func Start(manager *ServerManager) {
 	registerEndpointHandlers(manager)
 	log.Println("Starting server on port " + manager.serverPort)
@@ -69,21 +69,21 @@ func RegisterPostHandle(manager *ServerManager, hook func(w http.ResponseWriter,
 	manager.postHandleChain = append(manager.postHandleChain, hook)
 }
 
-// RegisterEndpoint adds a new endpoint to be managed by the server.
-func RegisterEndpoint(manager *ServerManager, endpoint string, method HttpMethod, endpointFunction requestFunction) {
-	if val, ok := manager.endpoints[endpoint]; ok {
-		//if the method exists throw error
+// RegisterEndpoint adds a new endpoint object to the web server.
+// If the same path + method already exists in the server, the application will fail.
+func RegisterEndpoint(manager *ServerManager, marker Endpoint) {
+	if val, ok := manager.endpoints[marker.Path]; ok {
 		for _, endpointObj := range val {
-			if endpointObj.method == method {
-				log.Fatalf("Endpoint method has already been registered: %v - %v", endpoint, method)
+			if endpointObj.Method == marker.Method {
+				log.Fatalf("Endpoint Method has already been registered: %v - %v", marker.Path, string(marker.Method))
 			}
 		}
-		//else add to list
-		manager.endpoints[endpoint] = append(val, endpointMarker{endpoint, method, endpointFunction})
+		manager.endpoints[marker.Path] = append(manager.endpoints[marker.Path], marker)
 	} else {
-		manager.endpoints[endpoint] = make([]endpointMarker, 0)
-		manager.endpoints[endpoint] = append(manager.endpoints[endpoint], endpointMarker{endpoint, method, endpointFunction})
+		manager.endpoints[marker.Path] = make([]Endpoint, 0)
+		manager.endpoints[marker.Path] = append(manager.endpoints[marker.Path], marker)
 	}
+	//TODO: ensuring a leading slash is in the path would be nice (doesnt resolve otherwise)
 }
 
 // SetRunningPort assign the running port for the webserver
@@ -92,18 +92,18 @@ func SetRunningPort(manager *ServerManager, port string) {
 }
 
 // createEndpointFunction merges all hooks and all functions for an endpoint together.
-// It also contains the logic that associates the HTTP method with the particular function to execute
-// We're on the honor system that the endpointMarker list actually is all the same endpoint path.
-func createEndpointFunction(preHook []requestFunction, postHook []requestFunction, endpointMethodFunctions []endpointMarker) func(w http.ResponseWriter, r *http.Request) {
+// It also contains the logic that associates the HTTP Method with the particular function to execute
+// We're on the honor system that the Endpoint list actually is all the same endpoint Path.
+func createEndpointFunction(preHook []RequestFunction, postHook []RequestFunction, endpointMethodFunctions []Endpoint) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		for _, f := range preHook {
 			f(w, r)
 		}
 
-		// checking the method might be nicer with a map instead of a slice. future improvement maybe.
+		// checking the Method might be nicer with a map instead of a slice. future improvement maybe.
 		for _, providedFunction := range endpointMethodFunctions {
-			if string(providedFunction.method) == r.Method {
-				providedFunction.endpointFunction(w, r)
+			if string(providedFunction.Method) == r.Method {
+				providedFunction.EndpointFunction(w, r)
 				break
 			}
 		}
