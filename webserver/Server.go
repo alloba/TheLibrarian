@@ -49,6 +49,16 @@ func New() ServerManager {
 	return ServerManager{":8080", make([]requestFunction, 0), make([]requestFunction, 0), make(map[string][]endpointMarker, 0)}
 }
 
+// Start triggers the webserver.
+// This merges all pre- and post-request functions with all HTTP method functions, and invokes http.ListenAndServe
+func Start(manager *ServerManager) {
+	registerEndpointHandlers(manager)
+	log.Println("Starting server on port " + manager.serverPort)
+	if err := http.ListenAndServe(manager.serverPort, nil); err != nil {
+		log.Fatal(err)
+	}
+}
+
 // RegisterPreHandle adds a new function to the chain .
 func RegisterPreHandle(manager *ServerManager, hook func(http.ResponseWriter, *http.Request)) {
 	manager.preHandleChain = append(manager.preHandleChain, hook)
@@ -111,15 +121,5 @@ func registerEndpointHandlers(manager *ServerManager) {
 		log.Printf("Registering endpoints for: %v", key)
 		var operatorFunction = createEndpointFunction(manager.preHandleChain, manager.postHandleChain, val)
 		http.HandleFunc(key, operatorFunction)
-	}
-}
-
-// Start triggers the webserver.
-// This merges all pre- and post-request functions with all HTTP method functions, and invokes http.ListenAndServe
-func Start(manager *ServerManager) {
-	registerEndpointHandlers(manager)
-	log.Println("Starting server on port " + manager.serverPort)
-	if err := http.ListenAndServe(manager.serverPort, nil); err != nil {
-		log.Fatal(err)
 	}
 }
