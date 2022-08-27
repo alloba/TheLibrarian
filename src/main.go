@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"github.com/alloba/TheLibrarian/database"
 	"github.com/alloba/TheLibrarian/webserver"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"time"
 )
 
 func main() {
@@ -15,14 +15,32 @@ func main() {
 	defer db.Close()
 
 	var recordRepo = database.NewRecordRepo(db)
-	var allRecords, err = recordRepo.FindAll()
-	if err != nil {
-		log.Fatalf("Couldnt do the thing: %v", err)
-		//panic("couldnt do the thing")
-	}
-	fmt.Printf("%#v\n", allRecords)
+	testRepoOperation(recordRepo)
 
 	log.Println("Terminating the Librarian")
+}
+
+func testRepoOperation(repo database.RecordRepo) {
+	//var allRecords, err = repo.FindAll()
+	//if err != nil {
+	//	log.Fatalf("Couldnt do the thing: %v", err)
+	//}
+	//
+
+	var record = database.Record{
+		Hash:             "123",
+		FilePointer:      "somelocation",
+		Name:             "tst",
+		Extension:        "aaa",
+		DateFileModified: time.Now(),
+		DateCreated:      time.Now(),
+		DateModified:     time.Now(),
+	}
+	err := repo.SaveOne(&record)
+	if err != nil {
+		log.Fatalf("failed to save to the database. %v", err)
+	}
+	log.Println("testing repo operations has concluded")
 }
 
 func launchWebserver() {
