@@ -3,39 +3,35 @@ package database
 import "time"
 
 type Record struct {
-	hash             string
-	filePointer      string
-	name             string
-	extension        string
-	dateFileModified time.Time
-
-	dateCreated  time.Time
-	dateModified time.Time
+	Hash             string
+	FilePointer      string
+	Name             string
+	Extension        string
+	DateFileModified time.Time
+	DateCreated      time.Time
+	DateModified     time.Time
 }
 
 type Page struct {
-	uuid        string
-	recordHash  string
-	bookUuid    string
-	editionUuid string
-
-	dateCreated  time.Time
-	dateModified time.Time
+	Uuid         string
+	RecordHash   string
+	BookUuid     string
+	EditionUuid  string
+	DateCreated  time.Time
+	DateModified time.Time
 }
 
 type Book struct {
-	uuid string
-	name string
-
-	dateCreated  time.Time
-	dateModified time.Time
+	Uuid         string
+	Name         string
+	DateCreated  time.Time
+	DateModified time.Time
 }
 
 type Edition struct {
-	uuid          string
-	editionNumber string
-	bookUuid      string
-
-	dateCreated  time.Time
-	dateModified time.Time
+	Uuid          string
+	EditionNumber string
+	BookUuid      string
+	DateCreated   time.Time
+	DateModified  time.Time
 }
