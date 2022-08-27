@@ -11,14 +11,17 @@ func NewRecordRepo(db *sql.DB) RecordRepo {
 	return RecordRepo{
 		db:      db,
 		FindAll: getAllRecords(db),
+		SaveOne: saveSingleRecord(db),
 	}
 }
 
 type RecordRepo struct {
 	db      *sql.DB
 	FindAll findAllRecords
+	SaveOne saveRecord
 }
 type findAllRecords func() ([]Record, error)
+type saveRecord func(record *Record) error
 
 func getAllRecords(db *sql.DB) func() ([]Record, error) {
 	return func() ([]Record, error) {
@@ -60,16 +63,35 @@ func getAllRecords(db *sql.DB) func() ([]Record, error) {
 				return nil, fmt.Errorf("could not poll row results for getAllRecords: %w", err)
 			}
 			records = append(records, Record{
-				hash:             hash,
-				filePointer:      filePointer,
-				name:             name,
-				extension:        extension,
-				dateFileModified: dateFileModified,
-				dateCreated:      dateCreated,
-				dateModified:     dateModified,
+				Hash:             hash,
+				FilePointer:      filePointer,
+				Name:             name,
+				Extension:        extension,
+				DateFileModified: dateFileModified,
+				DateCreated:      dateCreated,
+				DateModified:     dateModified,
 			})
 		}
 		log.Printf("completed operation getAllRecords. returning %v results", len(records))
 		return records, nil
+	}
+}
+
+func saveSingleRecord(db *sql.DB) func(record *Record) error {
+	return func(record *Record) error {
+		log.Printf("saving record to database")
+		stmt, err := db.Prepare(`insert into record(hash, file_pointer, name, extension, date_created, date_file_modified, date_modified) values (?,?,?,?,?,?,?)`)
+		if err != nil {
+			return fmt.Errorf("unable to form statement for saveSingleRecord: %w", err)
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(record.Hash, record.FilePointer, record.Name, record.Extension, record.DateCreated, record.DateFileModified, record.DateModified)
+		if err != nil {
+			log.Printf("Failed to save record with hash %v to the database. Reason: %v", record.Hash, err.Error())
+			return fmt.Errorf("unable to save record to database: %w", err)
+		}
+		log.Printf("completed saving record to database")
+		return nil
 	}
 }
