@@ -38,7 +38,7 @@ type Endpoint struct {
 // ServerManager manages all information required to configure and run a webserver.
 // This includes all relevant configuration as well as any registered hooks and endpoint functions.
 type ServerManager struct {
-	serverPort      string                // serverPort which port the server will run on.
+	ServerPort      string                // ServerPort which port the server will run on.
 	preHandleChain  []RequestFunction     // preHandleChain a list of functions that are run before any endpoint request
 	postHandleChain []RequestFunction     // postHandleChain a list of functions that are run after any endpoint request
 	endpoints       map[string][]Endpoint //endpoints all registered endpoints, organized by Path string
@@ -53,8 +53,8 @@ func New() ServerManager {
 // This merges all pre- and post-request functions with all HTTP Method functions, and invokes http.ListenAndServe
 func Start(manager *ServerManager) {
 	registerEndpointHandlers(manager)
-	log.Println("Starting server on port " + manager.serverPort)
-	if err := http.ListenAndServe(manager.serverPort, nil); err != nil {
+	log.Println("Starting server on port " + manager.ServerPort)
+	if err := http.ListenAndServe(manager.ServerPort, nil); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -88,7 +88,7 @@ func RegisterEndpoint(manager *ServerManager, marker Endpoint) {
 
 // SetRunningPort assign the running port for the webserver
 func SetRunningPort(manager *ServerManager, port string) {
-	manager.serverPort = port
+	manager.ServerPort = port
 }
 
 // createEndpointFunction merges all hooks and all functions for an endpoint together.

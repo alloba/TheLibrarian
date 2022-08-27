@@ -1,31 +1,40 @@
 package main
 
 import (
-	"database/sql"
+	"fmt"
+	"github.com/alloba/TheLibrarian/database"
 	"github.com/alloba/TheLibrarian/webserver"
+	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
-
-type Env struct {
-	db *sql.DB
-}
 
 func main() {
 	log.Println("Initializing the Librarian")
 
+	var db = database.Connect("../schema/library.db")
+	defer db.Close()
+
+	var recordRepo = database.NewRecordRepo(db)
+	var allRecords, err = recordRepo.FindAll()
+	if err != nil {
+		log.Fatalf("Couldnt do the thing: %v", err)
+		//panic("couldnt do the thing")
+	}
+	fmt.Printf("%#v\n", allRecords)
+
+	log.Println("Terminating the Librarian")
+}
+
+func launchWebserver() {
+	log.Println("Launching webserver")
 	var server = webserver.New()
+
+	server.ServerPort = ":8080"
+
 	RegisterControllerEndpoints(&server)
 	RegisterPreHooks(&server)
 	RegisterPostHooks(&server)
 	webserver.Start(&server)
 
-	log.Println("Terminating the Librarian")
+	log.Println("Webserver running on port " + server.ServerPort)
 }
-
-//TODO
-//	get this going -- https://github.com/mattn/go-sqlite3
-//	create notes around running a local instance of sqlite
-//	write down actual schema file for the library
-//	best effort first attempt at writing to database
-//  test functions for everything i'm writing
-//  ... Everything Else.
