@@ -9,19 +9,22 @@ import (
 
 func NewRecordRepo(db *sql.DB) RecordRepo {
 	return RecordRepo{
-		db:      db,
-		FindAll: getAllRecords(db),
-		SaveOne: saveSingleRecord(db),
+		db:         db,
+		FindAll:    getAllRecords(db),
+		SaveOne:    saveSingleRecord(db),
+		FindByHash: findSingleRecordByHash(db),
 	}
 }
 
 type RecordRepo struct {
-	db      *sql.DB
-	FindAll findAllRecords
-	SaveOne saveRecord
+	db         *sql.DB
+	FindAll    findAllRecords
+	SaveOne    saveRecord
+	FindByHash findRecordByHash
 }
 type findAllRecords func() ([]Record, error)
 type saveRecord func(record *Record) error
+type findRecordByHash func(hash string) (*Record, error)
 
 func getAllRecords(db *sql.DB) func() ([]Record, error) {
 	return func() ([]Record, error) {
@@ -35,8 +38,8 @@ func getAllRecords(db *sql.DB) func() ([]Record, error) {
         date_created, 
         date_modified, 
         date_file_modified
-        from record
-       `)
+        from record`)
+
 		if err != nil {
 			return nil, fmt.Errorf("could not form statement for getAllRecords: %w", err)
 		}
@@ -48,33 +51,80 @@ func getAllRecords(db *sql.DB) func() ([]Record, error) {
 		}
 		defer rows.Close()
 
-		var hash string
-		var filePointer string
-		var name string
-		var extension string
-		var dateFileModified time.Time
-		var dateCreated time.Time
-		var dateModified time.Time
 		var records = make([]Record, 0)
-
 		for rows.Next() {
-			err := rows.Scan(&hash, &filePointer, &name, &extension, &dateFileModified, &dateCreated, &dateModified)
+			record, err := createRecordFromDbResult(rows)
 			if err != nil {
 				return nil, fmt.Errorf("could not poll row results for getAllRecords: %w", err)
 			}
-			records = append(records, Record{
-				Hash:             hash,
-				FilePointer:      filePointer,
-				Name:             name,
-				Extension:        extension,
-				DateFileModified: dateFileModified,
-				DateCreated:      dateCreated,
-				DateModified:     dateModified,
-			})
+			records = append(records, *record)
 		}
 		log.Printf("completed operation getAllRecords. returning %v results", len(records))
 		return records, nil
 	}
+}
+
+func findSingleRecordByHash(db *sql.DB) func(hash string) (*Record, error) {
+	return func(hash string) (*Record, error) {
+		log.Printf("finding record by hash %v", hash)
+		stmt, err := db.Prepare(`select r.hash, r.file_pointer, r.name, r.extension, r.date_created, r.date_modified, r.date_file_modified from record r where r.hash = ?`)
+		if err != nil {
+			return nil, fmt.Errorf("could not form statement for findRecordByHash: %w", err)
+		}
+		defer stmt.Close()
+
+		res, err := stmt.Query(hash)
+		defer res.Close()
+		if err != nil {
+			return nil, fmt.Errorf("could not execute findRecordByHash: %w", err)
+		}
+
+		record, err := createRecordFromDbResult(res)
+		if err != nil {
+			return nil, fmt.Errorf("could not findRecordByHash: %w", err)
+		}
+
+		log.Printf("completed finding record by hash %v.", record)
+		return record, nil
+	}
+}
+
+func createRecordFromDbResult(result *sql.Rows) (*Record, error) {
+	var hash string
+	var filePointer string
+	var name string
+	var extension string
+	var dateFileModified time.Time
+	var dateCreated time.Time
+	var dateModified time.Time
+
+	var nRow = result.Next()
+	if nRow {
+		var err = result.Scan(
+			&hash,
+			&filePointer,
+			&name,
+			&extension,
+			&dateFileModified,
+			&dateCreated,
+			&dateModified,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error reading row from database: %w", err)
+		}
+		return &Record{
+			Hash:             hash,
+			FilePointer:      filePointer,
+			Name:             name,
+			Extension:        extension,
+			DateFileModified: dateFileModified,
+			DateCreated:      dateCreated,
+			DateModified:     dateModified,
+		}, nil
+	} else {
+		return nil, fmt.Errorf("unable to create Record from db result - no remaining rows")
+	}
+
 }
 
 func saveSingleRecord(db *sql.DB) func(record *Record) error {

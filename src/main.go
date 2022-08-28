@@ -3,9 +3,7 @@ package main
 import (
 	"github.com/alloba/TheLibrarian/database"
 	"github.com/alloba/TheLibrarian/webserver"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
-	"time"
 )
 
 func main() {
@@ -21,25 +19,11 @@ func main() {
 }
 
 func testRepoOperation(repo database.RecordRepo) {
-	//var allRecords, err = repo.FindAll()
-	//if err != nil {
-	//	log.Fatalf("Couldnt do the thing: %v", err)
-	//}
-	//
-
-	var record = database.Record{
-		Hash:             "123",
-		FilePointer:      "somelocation",
-		Name:             "tst",
-		Extension:        "aaa",
-		DateFileModified: time.Now(),
-		DateCreated:      time.Now(),
-		DateModified:     time.Now(),
-	}
-	err := repo.SaveOne(&record)
+	record, err := repo.FindByHash("123")
 	if err != nil {
-		log.Fatalf("failed to save to the database. %v", err)
+		log.Fatalf("couldnt find record: %v", err.Error())
 	}
+	log.Printf("Found record: %#v", record)
 	log.Println("testing repo operations has concluded")
 }
 
