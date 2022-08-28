@@ -8,6 +8,8 @@ import (
 )
 
 func Test_SaveAndEchoSingleRecord(t *testing.T) {
+	//todo need to have a separate testing database away from the actual in-use one.
+	//todo i really need a central way to manage database location.
 	var db = Connect("../../schema/library.db")
 	defer db.Close()
 
