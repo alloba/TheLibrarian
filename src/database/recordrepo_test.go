@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"gorm.io/gorm"
 	"testing"
 	"time"
@@ -50,11 +49,10 @@ func Test_RecordDoesNotExist(t *testing.T) {
 	defer deleteTestRecords(db)
 
 	t.Run("noRecord", func(t *testing.T) {
-		record, err := recordRepo.FindByHash("test_zzzzz")
-		if err != nil {
+		_, err := recordRepo.FindByHash("test_zzzzz")
+		if err == nil {
 			t.Errorf("failed test %v while searching for record - %v", t.Name(), err.Error())
 		}
-		fmt.Printf("%#v", record)
 	})
 }
 

@@ -16,20 +16,6 @@ type RecordService struct {
 	CreateRecordData processFile
 }
 
-type Status int
-
-const (
-	status_processed       = iota // operation completed in the expected way
-	status_partialcomplete        // part of operation was completed. this would apply to bulk tasks and multi-step processes.
-	status_ignored                // operation partially processed, but ultimately not persisted to backend due to no required action needed.
-	status_failed                 // operation failed outright. this should always be superseded by an actual error, but im covering all cases here.
-)
-
-type ServiceResult struct {
-	status Status
-	reason string
-}
-
 type processFile func(filepath string) (*database.Record, error)
 
 var basePath string
