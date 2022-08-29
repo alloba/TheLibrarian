@@ -73,9 +73,11 @@ func (service RecordService) CreateRecordData(filepath string) (*database.Record
 }
 
 func (service RecordService) PersistRecordIfUnique(record *database.Record, originPath string) (bool, error) {
-	_, err := service.recordRepo.FindByHash(record.Hash)
-	if err == nil {
-		//no record found means no new record needed.
+	recordExists, err := service.recordRepo.Exists(record.Hash)
+	if err != nil {
+		return false, fmt.Errorf("unable to query db for record exists - %v", err.Error())
+	}
+	if recordExists {
 		return false, nil
 	}
 

@@ -40,3 +40,15 @@ func (repo *RecordRepo) SaveOne(record *Record) error {
 	}
 	return nil
 }
+
+func (repo *RecordRepo) Exists(hash string) (bool, error) {
+	var exists bool
+	err := repo.db.Model(Record{}).
+		Select("count(*) > 0").
+		Where("hash = ?", hash).
+		Find(&exists).Error
+	if err != nil {
+		return false, fmt.Errorf("failed to search for record exsts %v - %v", hash, err.Error())
+	}
+	return exists, nil
+}
