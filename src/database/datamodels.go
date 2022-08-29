@@ -34,6 +34,19 @@ type Book struct {
 	DateModified time.Time `gorm:"not null"`
 }
 
+func (Edition) TableName() string {
+	return "edition"
+}
+
+type Edition struct {
+	Uuid          string    `gorm:"primaryKey"`
+	EditionNumber int       `gorm:"not null"`
+	BookUuid      string    `gorm:"not null" gorm:"references book.uuid"`
+	Book          *Book     `gorm:"not null" gorm:"foreignKey:BookUuid"`
+	DateCreated   time.Time `gorm:"not null"`
+	DateModified  time.Time `gorm:"not null"`
+}
+
 type Page struct {
 	Uuid         string
 	RecordHash   string
@@ -41,12 +54,4 @@ type Page struct {
 	EditionUuid  string
 	DateCreated  time.Time
 	DateModified time.Time
-}
-
-type Edition struct {
-	Uuid          string
-	EditionNumber string
-	BookUuid      string
-	DateCreated   time.Time
-	DateModified  time.Time
 }
