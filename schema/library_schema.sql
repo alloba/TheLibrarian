@@ -3,7 +3,7 @@ create table if not exists record
     hash               TEXT     not null primary key unique,
     file_pointer       TEXT     not null,
     name               TEXT     not null,
-    extension          TEXT,
+    extension          TEXT     not null,
     date_created       datetime not null,
     date_file_modified datetime not null,
     date_modified      datetime not null

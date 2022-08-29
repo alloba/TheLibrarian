@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func NewRecordRepo(db *sql.DB) RecordRepo {
-	return RecordRepo{
+func NewRecordRepo(db *sql.DB) *RecordRepo {
+	return &RecordRepo{
 		db:         db,
 		FindAll:    getAllRecords(db),
 		SaveOne:    saveSingleRecord(db),
@@ -89,7 +89,7 @@ func findSingleRecordByHash(db *sql.DB) func(hash string) (*Record, error) {
 			return nil, fmt.Errorf("could not findRecordByHash: %w", err)
 		}
 
-		log.Printf("completed finding record by hash %v.", record)
+		log.Printf("completed finding record by hash %v.", record.Hash)
 		return record, nil
 	}
 }
