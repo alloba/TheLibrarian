@@ -1,4 +1,3 @@
 /.idea/
-/database/library.records.db
 **/*.exe
-schema/library.db
+out/*
