@@ -27,7 +27,6 @@ func GetFileBinary(path string) (*os.File, error) {
 }
 
 func GetFileHash(file *os.File) (string, error) {
-
 	var hasher = sha256.New()
 	_, err := io.Copy(hasher, file)
 	if err != nil {
@@ -49,4 +48,37 @@ func GetQualifiedFilePath(path string) (string, error) {
 		}
 		return finalPath, nil
 	}
+}
+
+func GetAllNestedFilePaths(dirPath string) (*[]string, error) {
+	directoryPath, err := GetQualifiedFilePath(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load dirPath %v - %v", dirPath, err.Error())
+	}
+	stats, err := os.Stat(directoryPath)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load stats for %v - %v", directoryPath, err.Error())
+	}
+
+	if !stats.IsDir() {
+		return nil, fmt.Errorf("provided path is not a directory %v", directoryPath)
+	}
+
+	var paths = make([]string, 0)
+	err = filepath.Walk(directoryPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			paths = append(paths, path)
+		}
+		return nil
+
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not walk directory %v - %v", directoryPath, err.Error())
+	}
+
+	return &paths, nil
 }
