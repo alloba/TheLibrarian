@@ -18,7 +18,7 @@ func main() {
 	log.Println("Terminating the Librarian")
 }
 
-func testRepoOperation(repo database.RecordRepo) {
+func testRepoOperation(repo *database.RecordRepo) {
 	record, err := repo.FindByHash("123")
 	if err != nil {
 		log.Fatalf("couldnt find record: %v", err.Error())
