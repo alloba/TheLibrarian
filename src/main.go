@@ -9,9 +9,7 @@ import (
 func main() {
 	log.Println("Initializing the Librarian")
 
-	var db = database.Connect("../schema/library.db")
-	defer db.Close()
-
+	var db = database.Connect("../out/library.db")
 	var recordRepo = database.NewRecordRepo(db)
 	testRepoOperation(recordRepo)
 
