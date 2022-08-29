@@ -12,8 +12,8 @@ func Test_SaveAndEchoSingleRecord(t *testing.T) {
 	var db = Connect("../../out/library.db")
 
 	var recordRepo = NewRecordRepo(db)
-	deleteTestRecords(db)
-	defer deleteTestRecords(db)
+	deleteTestRecordEntries(db)
+	defer deleteTestRecordEntries(db)
 
 	var record = Record{
 		Hash:             "testhash1",
@@ -45,8 +45,8 @@ func Test_RecordDoesNotExist(t *testing.T) {
 	var db = Connect("../../out/library.db")
 
 	var recordRepo = NewRecordRepo(db)
-	deleteTestRecords(db)
-	defer deleteTestRecords(db)
+	deleteTestRecordEntries(db)
+	defer deleteTestRecordEntries(db)
 
 	t.Run("noRecord", func(t *testing.T) {
 		_, err := recordRepo.FindByHash("test_zzzzz")
@@ -59,8 +59,8 @@ func Test_RecordDoesNotExist(t *testing.T) {
 func Test_getAllRecords(t *testing.T) {
 	var db = Connect("../../out/library.db")
 	var recordRepo = NewRecordRepo(db)
-	deleteTestRecords(db)
-	defer deleteTestRecords(db)
+	deleteTestRecordEntries(db)
+	defer deleteTestRecordEntries(db)
 	var record = getDummyRecord()
 	recordRepo.SaveOne(record)
 
@@ -73,7 +73,7 @@ func Test_getAllRecords(t *testing.T) {
 
 }
 
-func deleteTestRecords(db *gorm.DB) {
+func deleteTestRecordEntries(db *gorm.DB) {
 	db.Where("hash like ?", "test%").Delete(&Record{})
 }
 

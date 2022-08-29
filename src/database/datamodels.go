@@ -4,11 +4,11 @@ import (
 	"time"
 )
 
+//Tabler provides a mechanism to override gorm table name defaults
 type Tabler interface {
 	TableName() string
 }
 
-//TableName provides a mechanism to override gorm table name defaults
 func (Record) TableName() string {
 	return "record"
 }
@@ -23,18 +23,22 @@ type Record struct {
 	DateModified     time.Time `gorm:"not null"`
 }
 
+func (Book) TableName() string {
+	return "book"
+}
+
+type Book struct {
+	Uuid         string    `gorm:"primaryKey"`
+	Name         string    `gorm:"not null"`
+	DateCreated  time.Time `gorm:"not null"`
+	DateModified time.Time `gorm:"not null"`
+}
+
 type Page struct {
 	Uuid         string
 	RecordHash   string
 	BookUuid     string
 	EditionUuid  string
-	DateCreated  time.Time
-	DateModified time.Time
-}
-
-type Book struct {
-	Uuid         string
-	Name         string
 	DateCreated  time.Time
 	DateModified time.Time
 }
