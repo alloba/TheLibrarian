@@ -7,7 +7,7 @@ import (
 )
 
 func Test_createRecordFromFile(t *testing.T) {
-	var db = database.Connect("../../schema/library.db")
+	var db = database.Connect("../../out/library.db")
 	var repo = database.NewRecordRepo(db)
 	var basepath = "./"
 	var service = New(repo, basepath)

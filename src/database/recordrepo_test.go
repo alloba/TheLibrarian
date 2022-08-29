@@ -9,7 +9,7 @@ import (
 func Test_SaveAndEchoSingleRecord(t *testing.T) {
 	//todo need to have a separate testing database away from the actual in-use one.
 	//todo i really need a central way to manage database location.
-	var db = Connect("../../schema/library.db")
+	var db = Connect("../../out/library.db")
 
 	var recordRepo = NewRecordRepo(db)
 	deleteTestRecords(db)
@@ -42,7 +42,7 @@ func Test_SaveAndEchoSingleRecord(t *testing.T) {
 }
 
 func Test_RecordDoesNotExist(t *testing.T) {
-	var db = Connect("../../schema/library.db")
+	var db = Connect("../../out/library.db")
 
 	var recordRepo = NewRecordRepo(db)
 	deleteTestRecords(db)
@@ -57,7 +57,7 @@ func Test_RecordDoesNotExist(t *testing.T) {
 }
 
 func Test_getAllRecords(t *testing.T) {
-	var db = Connect("../../schema/library.db")
+	var db = Connect("../../out/library.db")
 	var recordRepo = NewRecordRepo(db)
 	deleteTestRecords(db)
 	defer deleteTestRecords(db)
