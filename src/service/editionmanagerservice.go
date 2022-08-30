@@ -18,7 +18,7 @@ func NewEditionManagerService(repoManager *repository.RepoManager, fileService *
 	return &EditionManagerService{repoManager: repoManager, fileService: fileService}
 }
 
-func (service EditionManagerService) CreateNewEditionInNamedBook(bookName string, systemPath string) (*database.Edition, error) {
+func (service EditionManagerService) CreateNewEditionInNamedBook(bookName string, editionName string, systemPath string) (*database.Edition, error) {
 	bookExist, err := service.repoManager.Book.ExistsByName(bookName)
 	if err != nil {
 		return nil, logTrace(err)
@@ -46,6 +46,7 @@ func (service EditionManagerService) CreateNewEditionInNamedBook(bookName string
 	}
 	var edition = &database.Edition{
 		ID:            uuid.New().String(),
+		Name:          editionName,
 		EditionNumber: nextEdition,
 		BookID:        book.ID,
 		DateCreated:   time.Now(),

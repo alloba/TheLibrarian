@@ -15,7 +15,7 @@ func TestEditionManagerService_CreateNewEditionInNamedBook_MANUALVERIFY(t *testi
 	//repository.WipeTestDatabase(db)
 	//defer repository.WipeTestDatabase(db)
 
-	edition, err := editionService.CreateNewEditionInNamedBook("testBook", "../")
+	edition, err := editionService.CreateNewEditionInNamedBook("testBook", "", "../")
 	if err != nil {
 		t.Fatalf("Could not form edition - %v", err.Error())
 	}

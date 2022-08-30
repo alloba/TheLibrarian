@@ -29,6 +29,7 @@ create table if not exists pages
 create table if not exists editions
 (
     id             TEXT     not null primary key unique,
+    name           TEXT     not null,
     edition_number INT      not null,
     book_id        TEXT     not null references books,
     date_created   datetime not null,

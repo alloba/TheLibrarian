@@ -23,6 +23,7 @@ type Book struct {
 
 type Edition struct {
 	ID            string    `gorm:"column:id"             gorm:"primaryKey"`
+	Name          string    `gorm:"column:name"           gorm:"not null"`
 	EditionNumber int       `gorm:"column:edition_number" gorm:"not null"`
 	BookID        string    `gorm:"column:book_id"        gorm:"not null"`
 	DateCreated   time.Time `gorm:"column:date_created"   gorm:"not null"`
