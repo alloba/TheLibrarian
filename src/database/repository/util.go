@@ -3,9 +3,9 @@ package repository
 import (
 	"fmt"
 	"github.com/alloba/TheLibrarian/database"
-	"gorm.io/gorm"
 	"runtime"
 	"strings"
+	"time"
 )
 
 var integrationTestDbPath = "../../../out/library_integration_test.db"
@@ -22,16 +22,38 @@ func logTrace(err error) error {
 	return fmt.Errorf("%v: %v", methodName, err.Error())
 }
 
-func cleanUpTestRecords(db *gorm.DB) {
-	err := db.Where("id like ?", "test%").Delete(&database.Record{}).Error
-	if err != nil {
-		panic(logTrace(err))
+func getTestRecord(id string) *database.Record {
+	return &database.Record{
+		ID:               id,
+		FilePointer:      "testpointer",
+		Name:             "testname",
+		Extension:        "test",
+		DateFileModified: time.Now(),
+		DateCreated:      time.Now(),
+		DateModified:     time.Now(),
 	}
 }
 
-func cleanUpTestBooks(db *gorm.DB) {
-	err := db.Where("id like ?", "test%").Delete(&database.Book{}).Error
-	if err != nil {
-		panic(logTrace(err))
+func getTestPage(id string, editionId string) *database.Page {
+	record := getTestRecord("testRecordAssociatedWithPage" + id)
+	//edition := getTestEdition("testEditionAssociatedWithPage" + id)
+
+	return &database.Page{
+		ID:        id,
+		RecordID:  record.ID,
+		Record:    *record,
+		EditionID: editionId,
+		//Edition:      edition,
+		DateCreated:  time.Now(),
+		DateModified: time.Now(),
+	}
+}
+
+func getTestBook(id string) *database.Book {
+	return &database.Book{
+		ID:           id,
+		Name:         "testname",
+		DateCreated:  time.Now(),
+		DateModified: time.Now(),
 	}
 }
