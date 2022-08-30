@@ -26,7 +26,30 @@ func (repo EditionRepo) Exists(EditionId string) (bool, error) {
 	return exists, nil
 }
 
-func (repo EditionRepo) SaveOne(Edition *database.Edition) error {
+func (repo EditionRepo) FindNextEditionNumber(bookId string) (int, error) {
+	var exists bool
+	err := repo.db.Model(&database.Edition{}).
+		Select("count(*) > 0").
+		Where("book_id = ?", bookId).
+		Find(&exists).Error
+
+	if err != nil {
+		return 0, logTrace(err)
+	}
+	if !exists {
+		return 0, nil
+	} else {
+		var num = 0
+		err := repo.db.Model(&database.Edition{}).Select("edition_number").Where("book_id = ?", bookId).Order("edition_number desc").Limit(1).Find(&num).Error
+		if err != nil {
+			return 0, logTrace(err)
+		}
+		return num + 1, nil
+	}
+
+}
+
+func (repo EditionRepo) CreateOne(Edition *database.Edition) error {
 	if err := repo.db.Create(Edition).Error; err != nil {
 		return logTrace(err)
 	}

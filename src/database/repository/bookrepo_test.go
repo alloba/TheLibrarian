@@ -32,9 +32,28 @@ func TestBookRepo_SaveOne(t *testing.T) {
 			repo := BookRepo{
 				db: tt.fields.db,
 			}
-			if err := repo.SaveOne(tt.args.book); (err != nil) != tt.wantErr {
-				t.Errorf("SaveOne() error = %v, wantErr %v", err, tt.wantErr)
+			if err := repo.CreateOne(tt.args.book); (err != nil) != tt.wantErr {
+				t.Errorf("CreateOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
+}
+
+func TestBookRepo_FindOneByName(t *testing.T) {
+	db := database.Connect(integrationTestDbPath)
+	repo := BookRepo{db: db}
+	testBook := getTestBook("testBookAssociatedWithEdition")
+	defer wipeTestDatabase(db)
+
+	err := repo.CreateOne(testBook)
+	if err != nil {
+		t.Fatalf("couldnt save book into db")
+	}
+
+	res, err := repo.FindOneByName(testBook.Name)
+	if err != nil {
+		t.Fatalf("couldnt find book - %v", err.Error())
+	}
+	t.Logf("%#v", res)
+
 }

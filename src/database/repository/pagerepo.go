@@ -26,8 +26,46 @@ func (repo PageRepo) Exists(PageId string) (bool, error) {
 	return exists, nil
 }
 
-func (repo PageRepo) SaveOne(Page *database.Page) error {
+func (repo PageRepo) ExistsByRecordAndEdition(recordId string, editionId string) (bool, error) {
+	var exists bool
+	err := repo.db.Model(&database.Page{}).
+		Select("count(*) > 0").
+		Where("record_id = ? and edition_id = ?", recordId, editionId).
+		Find(&exists).Error
+
+	if err != nil {
+		return false, logTrace(err)
+	}
+	return exists, nil
+}
+
+func (repo PageRepo) FindOneByRecordAndEdition(recordId string, editionId string) (*database.Page, error) {
+	res := database.Page{}
+	err := repo.db.Where("record_id = ? and edition_id = ?", recordId, editionId).First(&res).Error
+	if err != nil {
+		return nil, logTrace(err)
+	}
+	return &res, nil
+}
+
+func (repo PageRepo) CreateOne(Page *database.Page) error {
 	if err := repo.db.Create(Page).Error; err != nil {
+		return logTrace(err)
+	}
+	return nil
+}
+
+func (repo PageRepo) UpsertAll(pages *[]database.Page) error {
+	err := repo.db.Transaction(func(tx *gorm.DB) error {
+		for _, page := range *pages {
+			err := tx.Save(page).Error
+			if err != nil {
+				return logTrace(err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		return logTrace(err)
 	}
 	return nil

@@ -57,7 +57,7 @@ func getTestBook(id string) *database.Book {
 	}
 }
 
-func wipeTestDatabase(db *gorm.DB) {
+func WipeTestDatabase(db *gorm.DB) {
 	//delete page
 	//delete edition
 	//delete book

@@ -9,6 +9,7 @@ type RepoManager struct {
 	Book    *BookRepo
 	Edition *EditionRepo
 	Page    *PageRepo
+	Db      *gorm.DB
 }
 
 func NewRepoManager(db *gorm.DB) *RepoManager {
@@ -17,5 +18,6 @@ func NewRepoManager(db *gorm.DB) *RepoManager {
 		Book:    NewBookRepo(db),
 		Edition: NewEditionRepo(db),
 		Page:    NewPageRepo(db),
+		Db:      db,
 	}
 }

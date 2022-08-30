@@ -37,10 +37,10 @@ func TestEditionRepo_Exists(t *testing.T) {
 			}
 			defer wipeTestDatabase(db)
 
-			if err := repoManager.Book.SaveOne(testBook); err != nil {
+			if err := repoManager.Book.CreateOne(testBook); err != nil {
 				t.Fatalf("failed setup")
 			}
-			if err := repo.SaveOne(testEdition); err != nil {
+			if err := repo.CreateOne(testEdition); err != nil {
 				t.Fatalf("failed setup")
 			}
 
@@ -62,7 +62,7 @@ func TestEditionRepo_SaveOne(t *testing.T) {
 	testBook := getTestBook("testBookAssociatedWithEdition")
 	testEdition := getTestEdition("testEdition1", testBook.ID)
 
-	repoManager.Book.SaveOne(testBook)
+	repoManager.Book.CreateOne(testBook)
 	defer wipeTestDatabase(db)
 
 	type fields struct {
@@ -86,8 +86,8 @@ func TestEditionRepo_SaveOne(t *testing.T) {
 			repo := EditionRepo{
 				db: tt.fields.db,
 			}
-			if err := repo.SaveOne(tt.args.Edition); (err != nil) != tt.wantErr {
-				t.Errorf("SaveOne() error = %v, wantErr %v", err, tt.wantErr)
+			if err := repo.CreateOne(tt.args.Edition); (err != nil) != tt.wantErr {
+				t.Errorf("CreateOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -115,14 +115,14 @@ func TestEditionRepo_DeleteOne(t *testing.T) {
 		{"successDelete", fields{db}, args{testEdition.ID}, false},
 		{"successNoActionTaken", fields{db}, args{"fakeidnothere"}, false},
 	}
-	repoManager.Book.SaveOne(testBook)
+	repoManager.Book.CreateOne(testBook)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			defer repoManager.Edition.DeleteOne(tt.args.EditionId)
 			repo := EditionRepo{
 				db: tt.fields.db,
 			}
-			if err := repo.SaveOne(testEdition); err != nil {
+			if err := repo.CreateOne(testEdition); err != nil {
 				t.Error(logTrace(err))
 			}
 
@@ -130,6 +130,25 @@ func TestEditionRepo_DeleteOne(t *testing.T) {
 				t.Errorf("DeleteOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestEditionRepo_FindNextEditionNumber(t *testing.T) {
+	db := database.Connect(integrationTestDbPath)
+	repoManager := NewRepoManager(db)
+	testBook := getTestBook("testBookAssociatedWithEdition")
+	testEdition := getTestEdition("testEdition1", testBook.ID)
+
+	repoManager.Book.CreateOne(testBook)
+	repoManager.Edition.CreateOne(testEdition)
+	defer wipeTestDatabase(db)
+
+	res, err := repoManager.Edition.FindNextEditionNumber(testBook.ID)
+	if err != nil {
+		t.Fatalf("couldnt get next edition - %v", err.Error())
+	}
+	if res != 1 {
+		t.Fatalf("wanted next edition to be 1, but got %v", res)
 	}
 }
 
