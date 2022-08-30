@@ -3,6 +3,7 @@ package repository
 import (
 	"fmt"
 	"github.com/alloba/TheLibrarian/database"
+	"gorm.io/gorm"
 	"runtime"
 	"strings"
 	"time"
@@ -39,11 +40,9 @@ func getTestPage(id string, editionId string) *database.Page {
 	//edition := getTestEdition("testEditionAssociatedWithPage" + id)
 
 	return &database.Page{
-		ID:        id,
-		RecordID:  record.ID,
-		Record:    *record,
-		EditionID: editionId,
-		//Edition:      edition,
+		ID:           id,
+		RecordID:     record.ID,
+		EditionID:    editionId,
 		DateCreated:  time.Now(),
 		DateModified: time.Now(),
 	}
@@ -56,4 +55,15 @@ func getTestBook(id string) *database.Book {
 		DateCreated:  time.Now(),
 		DateModified: time.Now(),
 	}
+}
+
+func wipeTestDatabase(db *gorm.DB) {
+	//delete page
+	//delete edition
+	//delete book
+	//delete record
+	db.Where("1=1").Delete(&database.Page{})
+	db.Where("1=1").Delete(&database.Edition{})
+	db.Where("1=1").Delete(&database.Book{})
+	db.Where("1=1").Delete(&database.Record{})
 }

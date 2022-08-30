@@ -5,17 +5,17 @@ import (
 )
 
 type RepoManager struct {
-	Book    *BookRepo
-	Page    *PageRepo
-	Edition *EditionRepo
 	Record  *RecordRepo
+	Book    *BookRepo
+	Edition *EditionRepo
+	Page    *PageRepo
 }
 
 func NewRepoManager(db *gorm.DB) *RepoManager {
 	return &RepoManager{
-		Book:    NewBookRepo(db),
-		Page:    NewPageRepo(db),
-		Edition: NewEditionRepo(db),
 		Record:  NewRecordRepo(db),
+		Book:    NewBookRepo(db),
+		Edition: NewEditionRepo(db),
+		Page:    NewPageRepo(db),
 	}
 }

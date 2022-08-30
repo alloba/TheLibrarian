@@ -12,6 +12,7 @@ func TestEditionRepo_Exists(t *testing.T) {
 	repoManager := NewRepoManager(db)
 	testBook := getTestBook("testBookAssociatedWithEdition")
 	testEdition := getTestEdition("testEdition1", testBook.ID)
+	defer wipeTestDatabase(db)
 
 	type fields struct {
 		db *gorm.DB
@@ -34,9 +35,7 @@ func TestEditionRepo_Exists(t *testing.T) {
 			repo := EditionRepo{
 				db: tt.fields.db,
 			}
-			defer repoManager.Book.DeleteOne(testBook.ID)
-			defer repoManager.Edition.DeleteOne(testEdition.ID)
-			defer repoManager.Edition.DeleteOne(tt.args.EditionId)
+			defer wipeTestDatabase(db)
 
 			if err := repoManager.Book.SaveOne(testBook); err != nil {
 				t.Fatalf("failed setup")
@@ -63,6 +62,9 @@ func TestEditionRepo_SaveOne(t *testing.T) {
 	testBook := getTestBook("testBookAssociatedWithEdition")
 	testEdition := getTestEdition("testEdition1", testBook.ID)
 
+	repoManager.Book.SaveOne(testBook)
+	defer wipeTestDatabase(db)
+
 	type fields struct {
 		db *gorm.DB
 	}
@@ -78,10 +80,6 @@ func TestEditionRepo_SaveOne(t *testing.T) {
 		{name: "newEditionSaved", fields: fields{db: db}, args: args{testEdition}, wantErr: false},
 		{name: "existingEditionFailedSave", fields: fields{db: db}, args: args{testEdition}, wantErr: true},
 	}
-	repoManager.Book.SaveOne(testBook)
-	defer repoManager.Book.DeleteOne(testBook.ID)
-	defer repoManager.Edition.DeleteOne(testEdition.ID)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -100,6 +98,7 @@ func TestEditionRepo_DeleteOne(t *testing.T) {
 	repoManager := NewRepoManager(db)
 	testBook := getTestBook("testBookAssociatedWithEdition")
 	testEdition := getTestEdition("testEdition1", testBook.ID)
+	defer wipeTestDatabase(db)
 
 	type fields struct {
 		db *gorm.DB
@@ -117,7 +116,6 @@ func TestEditionRepo_DeleteOne(t *testing.T) {
 		{"successNoActionTaken", fields{db}, args{"fakeidnothere"}, false},
 	}
 	repoManager.Book.SaveOne(testBook)
-	defer repoManager.Book.DeleteOne(testBook.ID)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			defer repoManager.Edition.DeleteOne(tt.args.EditionId)
