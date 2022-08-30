@@ -159,3 +159,8 @@ func (service EditionManagerService) pageFromRecordAndEdition(record *database.R
 		DateModified: time.Now(),
 	}
 }
+
+//TODO data export.
+//	- download edition - provide the root destination path. then find the common root for all records in the edition. make directory tree under destination after stripping common root
+//	- download particular record - provide destination, copy based on record name (not path at all)
+//	- download entire book - same as download edition, but multiple root directories labeled as edition number + name
