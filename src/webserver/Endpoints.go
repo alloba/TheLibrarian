@@ -1,25 +1,24 @@
-package main
+package webserver
 
 import (
 	"fmt"
-	"github.com/alloba/TheLibrarian/webserver"
 	"net/http"
 )
 
 // RegisterControllerEndpoints handles adding all web endpoints to the server.
 // This is hard-coded configured, and deals with private functions.
-func RegisterControllerEndpoints(server *webserver.ServerManager) {
+func RegisterControllerEndpoints(server *ServerManager) {
 	for _, val := range testController {
-		webserver.RegisterEndpoint(server, val)
+		RegisterEndpoint(server, val)
 	}
 }
 
-var testController = []webserver.Endpoint{
-	{"/test/hello", webserver.GET, testControllerHelloWorld()},
-	{"/test/counter", webserver.GET, testControllerGlobalCounter()},
+var testController = []Endpoint{
+	{"/test/hello", GET, testControllerHelloWorld()},
+	{"/test/counter", GET, testControllerGlobalCounter()},
 }
 
-func testControllerHelloWorld() webserver.RequestFunction {
+func testControllerHelloWorld() RequestFunction {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Hello world!")
 	}
@@ -27,7 +26,7 @@ func testControllerHelloWorld() webserver.RequestFunction {
 
 var counter = 0
 
-func testControllerGlobalCounter() webserver.RequestFunction {
+func testControllerGlobalCounter() RequestFunction {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		counter += 1
 		fmt.Fprint(writer, "Counted: ", counter)
