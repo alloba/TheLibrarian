@@ -16,7 +16,7 @@ func Test_SaveAndEchoSingleRecord(t *testing.T) {
 	defer deleteTestRecordEntries(db)
 
 	var record = Record{
-		Hash:             "testhash1",
+		Id:               "testhash1",
 		FilePointer:      "filepoint",
 		Name:             "filenameeeeeeeeeez",
 		Extension:        "fileextensionj",
@@ -35,7 +35,7 @@ func Test_SaveAndEchoSingleRecord(t *testing.T) {
 			t.Errorf("failed test %v while searching for record - %v", t.Name(), err.Error())
 		}
 
-		if r.Hash != "testhash1" {
+		if r.Id != "testhash1" {
 			t.Errorf("failed test %v. returned record hash does not match - %v", t.Name(), err.Error())
 		}
 	})
@@ -79,7 +79,7 @@ func deleteTestRecordEntries(db *gorm.DB) {
 
 func getDummyRecord() *Record {
 	return &Record{
-		Hash:             "testhash1",
+		Id:               "testhash1",
 		FilePointer:      "filepoint",
 		Name:             "filename",
 		Extension:        "fileextensionj",

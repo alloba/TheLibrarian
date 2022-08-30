@@ -13,7 +13,7 @@ func TestBookRepo_FindOne(t *testing.T) {
 	defer deleteTestBookEntries(db)
 
 	var testBook = Book{
-		Uuid:         "testUuid1",
+		Id:           "testUuid1",
 		Name:         "testBook1",
 		DateCreated:  time.Now(),
 		DateModified: time.Now(),
@@ -48,27 +48,27 @@ func TestBookRepo_SaveOne(t *testing.T) {
 
 	t.Run("saveBookToDbNotExist", func(t *testing.T) {
 		var testBook = Book{
-			Uuid:         "testUuid1",
+			Id:           "testUuid1",
 			Name:         "testBook1",
 			DateCreated:  time.Now(),
 			DateModified: time.Now(),
 		}
 		err := bookRepo.SaveOne(&testBook)
 		if err != nil {
-			t.Errorf("failed to save book to db %v - %v", testBook.Uuid, err.Error())
+			t.Errorf("failed to save book to db %v - %v", testBook.Id, err.Error())
 		}
 	})
 
 	t.Run("saveBookToDbExists", func(t *testing.T) {
 		var testBook = Book{
-			Uuid:         "testUuid1",
+			Id:           "testUuid1",
 			Name:         "testBook1",
 			DateCreated:  time.Now(),
 			DateModified: time.Now(),
 		}
 		err := bookRepo.SaveOne(&testBook)
 		if err == nil {
-			t.Errorf("succeeded to save book to db when should be disallowed %v", testBook.Uuid)
+			t.Errorf("succeeded to save book to db when should be disallowed %v", testBook.Id)
 		}
 	})
 }

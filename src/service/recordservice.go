@@ -3,68 +3,42 @@ package service
 import (
 	"fmt"
 	"github.com/alloba/TheLibrarian/database"
-	"github.com/alloba/TheLibrarian/fileutil"
 	"io"
 	"log"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 )
 
 type RecordService struct {
-	recordRepo *database.RecordRepo
-	basePath   string
+	recordRepo  *database.RecordRepo
+	fileService *FileService
 }
 
-func New(repo *database.RecordRepo, archiveBasePath string) *RecordService {
-	absPath, err := filepath.Abs(archiveBasePath)
-	if err != nil {
-		log.Fatalf("could not load path for %v. does directory exist?", archiveBasePath)
-	}
-	stat, err := os.Stat(absPath)
-	if err != nil || !stat.IsDir() {
-		log.Fatalf("either couldnt read file stats for absPath or it isn't a directory.")
-	}
+type RecordZip struct {
+	OriginPath string
+	RecordItem *database.Record
+}
 
+func NewRecordService(repo *database.RecordRepo, fileService *FileService) *RecordService {
 	return &RecordService{
-		recordRepo: repo,
-		basePath:   absPath + string(os.PathSeparator),
+		recordRepo:  repo,
+		fileService: fileService,
 	}
 }
 
 func (service RecordService) CreateRecordData(filepath string) (*database.Record, error) {
-	file, err := fileutil.GetFileBinary(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get file binary - %v", err.Error())
+	record, err := service.fileService.CreateFileObjectContainer(filepath)
+	if err != nil || record.isDir {
+		return nil, fmt.Errorf("unable to form file object for path %v", filepath)
 	}
-	defer file.Close()
-
-	fileHash, err := fileutil.GetFileHash(file)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get file hash - %v", err.Error())
-	}
-
-	qualifiedPath, err := fileutil.GetQualifiedFilePath(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("could not get full path of file - %v", err.Error())
-	}
-
-	stat, err := file.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("could not load file stats - %v", err.Error())
-	}
-
-	var pathBits = strings.Split(qualifiedPath, string(os.PathSeparator))
-	var fname = pathBits[len(pathBits)-1]
-	var ext = "." + strings.Split(fname, ".")[len(strings.Split(fname, "."))-1]
+	defer record.Close()
 
 	var recordObj = &database.Record{
-		Hash:             fileHash,
-		FilePointer:      service.basePath + generateUniqueSubPath(fileHash) + ".bin",
-		Name:             fname,
-		Extension:        ext,
-		DateFileModified: stat.ModTime(),
+		Id:               record.hash,
+		FilePointer:      record.archivePath,
+		Name:             record.name,
+		Extension:        record.extension,
+		DateFileModified: (*record.stat).ModTime(),
 		DateCreated:      time.Now(),
 		DateModified:     time.Now(),
 	}
@@ -72,8 +46,8 @@ func (service RecordService) CreateRecordData(filepath string) (*database.Record
 	return recordObj, nil
 }
 
-func (service RecordService) PersistRecordIfUnique(record *database.Record, originPath string) (bool, error) {
-	recordExists, err := service.recordRepo.Exists(record.Hash)
+func (service RecordService) PersistRecordIfUnique(recordZip *RecordZip) (bool, error) {
+	recordExists, err := service.recordRepo.Exists(recordZip.RecordItem.Id)
 	if err != nil {
 		return false, fmt.Errorf("unable to query db for record exists - %v", err.Error())
 	}
@@ -81,40 +55,75 @@ func (service RecordService) PersistRecordIfUnique(record *database.Record, orig
 		return false, nil
 	}
 
-	file, err := fileutil.GetFileBinary(originPath)
-	if err != nil {
-		return false, fmt.Errorf("unable to get file binary - %v", err.Error())
+	filecontainer, err := service.fileService.CreateFileObjectContainer(recordZip.OriginPath)
+	if err != nil || filecontainer.isDir {
+		return false, fmt.Errorf("unable to get file container")
 	}
-	defer file.Close()
+	defer filecontainer.Close()
 
-	fileDestination, err := os.Create(record.FilePointer)
+	fileDestination, err := os.Create(recordZip.RecordItem.FilePointer)
 	if err != nil {
 		return false, fmt.Errorf("unable to access record filepointer - %v", err.Error())
 	}
 	defer fileDestination.Close()
 
-	_, err = io.Copy(fileDestination, file)
+	_, err = io.Copy(fileDestination, filecontainer.binary)
 	if err != nil {
 		return false, fmt.Errorf("unable to write bytes to record filepointer - %v", err.Error())
 	}
 
-	err = service.recordRepo.SaveOne(record)
+	err = service.recordRepo.SaveOne(recordZip.RecordItem)
 	if err != nil {
-		quietAttemptDelete(record.FilePointer)
+		quietAttemptDelete(recordZip.RecordItem.FilePointer)
 		return false, fmt.Errorf("unable to save new record to database - %v", err.Error())
 	}
 
-	_, err = service.recordRepo.FindByHash(record.Hash)
+	_, err = service.recordRepo.FindByHash(recordZip.RecordItem.Id)
 	if err != nil {
-		quietAttemptDelete(record.FilePointer)
-		return false, fmt.Errorf("could not ack record in database: %v", record.Hash)
+		quietAttemptDelete(recordZip.RecordItem.FilePointer)
+		return false, fmt.Errorf("could not ack record in database: %v", recordZip.RecordItem.Id)
 	}
 
 	return true, nil
 }
 
-func generateUniqueSubPath(hash string) string {
-	return fmt.Sprintf("%v_%v", time.Now().Unix(), hash)
+func (service RecordService) PersistAllRecordsIfUnique(records *[]RecordZip) (bool, error) {
+	var allFullOps = false
+	for _, item := range *records {
+		fullAction, err := service.PersistRecordIfUnique(&item)
+		if err != nil {
+			return false, fmt.Errorf("unable to save all records, failed at %v - %v", item.OriginPath, err.Error())
+		}
+		if fullAction == false {
+			allFullOps = false
+		}
+	}
+	return allFullOps, nil
+}
+
+func (service RecordService) Exists(hash string) (bool, error) {
+	exist, err := service.recordRepo.Exists(hash)
+	if err != nil {
+		return false, fmt.Errorf("could not check if record exists %v - %v", hash, err.Error())
+	}
+	return exist, nil
+}
+
+func (service RecordService) GetByHash(hash string) (*database.Record, error) {
+	exist, err := service.Exists(hash)
+	if err != nil {
+		return nil, fmt.Errorf("could not check if file exists -%v", err.Error())
+	}
+	if !exist {
+		return nil, fmt.Errorf("no record found %v", hash)
+	}
+
+	rec, err := service.recordRepo.FindByHash(hash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load record %v - %v", hash, err.Error())
+	}
+
+	return rec, nil
 }
 
 // an attempt at file cleanup when other operations fail and the copy operation needs to be backed out.

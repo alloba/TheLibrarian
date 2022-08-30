@@ -1,6 +1,6 @@
-create table if not exists record
+create table if not exists records
 (
-    hash               TEXT     not null primary key unique,
+    id                 TEXT     not null primary key unique,
     file_pointer       TEXT     not null,
     name               TEXT     not null,
     extension          TEXT     not null,
@@ -9,29 +9,28 @@ create table if not exists record
     date_modified      datetime not null
 );
 
-create table if not exists book
+create table if not exists books
 (
-    uuid          TEXT     not null primary key unique,
+    id            TEXT     not null primary key unique,
     name          TEXT     not null unique,
     date_created  datetime not null,
     date_modified datetime not null
 );
 
-create table if not exists page
+create table if not exists pages
 (
-    uuid          TEXT     not null primary key unique,
-    record_hash   TEXT     not null references record,
-    book_uuid     TEXT     not null references book,
-    edition_uuid  TEXT     not null references edition,
+    id            TEXT     not null primary key unique,
+    record_id     TEXT     not null references records,
+    edition_id    TEXT     not null references editions,
     date_created  datetime not null,
     date_modified datetime not null
 );
 
-create table if not exists edition
+create table if not exists editions
 (
-    uuid           TEXT     not null primary key unique,
+    id             TEXT     not null primary key unique,
     edition_number INT      not null,
-    book_uuid      TEXT     not null references book,
+    book_id        TEXT     not null references books,
     date_created   datetime not null,
     date_modified  datetime not null
 );

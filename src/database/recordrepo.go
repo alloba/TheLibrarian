@@ -26,7 +26,7 @@ func (repo *RecordRepo) FindAll() ([]Record, error) {
 
 func (repo *RecordRepo) FindByHash(hash string) (*Record, error) {
 	var record Record
-	result := repo.db.Where("hash = ?", hash).First(&record)
+	result := repo.db.Where("id = ?", hash).First(&record)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to find record - %v", result.Error.Error())
 	}
@@ -45,7 +45,7 @@ func (repo *RecordRepo) Exists(hash string) (bool, error) {
 	var exists bool
 	err := repo.db.Model(Record{}).
 		Select("count(*) > 0").
-		Where("hash = ?", hash).
+		Where("id = ?", hash).
 		Find(&exists).Error
 	if err != nil {
 		return false, fmt.Errorf("failed to search for record exsts %v - %v", hash, err.Error())

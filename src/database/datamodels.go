@@ -5,16 +5,16 @@ import (
 )
 
 //Tabler provides a mechanism to override gorm table name defaults
-type Tabler interface {
-	TableName() string
-}
+//type Tabler interface {
+//	TableName() string
+//}
 
-func (Record) TableName() string {
-	return "record"
-}
+//func (Record) TableName() string {
+//	return "record"
+//}
 
 type Record struct {
-	Hash             string    `gorm:"primaryKey"`
+	Id               string    `gorm:"primaryKey" gorm:"constraint:OnDelete:CASCADE;"`
 	FilePointer      string    `gorm:"not null"`
 	Name             string    `gorm:"not null"`
 	Extension        string    `gorm:"not null"`
@@ -23,35 +23,41 @@ type Record struct {
 	DateModified     time.Time `gorm:"not null"`
 }
 
-func (Book) TableName() string {
-	return "book"
-}
+//func (Book) TableName() string {
+//	return "book"
+//}
 
 type Book struct {
-	Uuid         string    `gorm:"primaryKey"`
+	Id           string    `gorm:"primaryKey" gorm:"constraint:OnDelete:CASCADE;"`
 	Name         string    `gorm:"not null"`
 	DateCreated  time.Time `gorm:"not null"`
 	DateModified time.Time `gorm:"not null"`
 }
 
-func (Edition) TableName() string {
-	return "edition"
-}
+//func (Edition) TableName() string {
+//	return "edition"
+//}
 
 type Edition struct {
-	Uuid          string    `gorm:"primaryKey"`
+	Id            string    `gorm:"primaryKey"`
 	EditionNumber int       `gorm:"not null"`
-	BookUuid      string    `gorm:"not null" gorm:"references book.uuid"`
-	Book          *Book     `gorm:"not null" gorm:"foreignKey:BookUuid"`
+	BookId        string    `gorm:"not null" gorm:"constraint:OnDelete:CASCADE;"`
+	Book          *Book     `gorm:"not null" gorm:"constraint:OnDelete:CASCADE;"`
+	Pages         *[]Page   `gorm:"foreignKey:EditionId" gorm:"constraint:OnDelete:CASCADE;"`
 	DateCreated   time.Time `gorm:"not null"`
 	DateModified  time.Time `gorm:"not null"`
 }
 
+//func (Page) TableName() string {
+//	return "page"
+//}
+
 type Page struct {
-	Uuid         string
-	RecordHash   string
-	BookUuid     string
-	EditionUuid  string
-	DateCreated  time.Time
-	DateModified time.Time
+	Id           string    `gorm:"primaryKey"`
+	RecordId     string    `gorm:"not null"`
+	Record       Record    `gorm:"not null" gorm:"foreignKey:RecordId" gorm:"constraint:OnDelete:CASCADE;"`
+	EditionId    string    `gorm:"not null" gorm:"constraint:OnDelete:CASCADE;"`
+	Edition      *Edition  `gorm:"not null" gorm:"foreignKey:EditionId" gorm:"constraint:OnDelete:CASCADE;"`
+	DateCreated  time.Time `gorm:"not null"`
+	DateModified time.Time `gorm:"not null"`
 }

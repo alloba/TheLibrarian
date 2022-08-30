@@ -31,14 +31,27 @@ func (repo BookRepo) SaveOne(book *Book) error {
 	return nil
 }
 
-func (repo BookRepo) Exists(uuid string) (bool, error) {
+func (repo BookRepo) ExistsByUuid(uuid string) (bool, error) {
 	var exists bool
 	err := repo.db.Model(Book{}).
 		Select("count(*) > 0").
 		Where("uuid = ?", uuid).
 		Find(&exists).Error
 	if err != nil {
-		return false, fmt.Errorf("failed to search for book exsts %v - %v", uuid, err.Error())
+		return false, fmt.Errorf("failed to search for book exists by hash %v - %v", uuid, err.Error())
+	}
+	return exists, nil
+}
+
+func (repo BookRepo) ExistsByName(name string) (bool, error) {
+	var exists bool
+	err := repo.db.Model(&Book{}).
+		Select("count(*) > 0").
+		Where("name = ?", name).
+		Find(&exists).Error
+
+	if err != nil {
+		return false, fmt.Errorf("failed to search for book exists by name %v - %v", name, err.Error())
 	}
 	return exists, nil
 }
