@@ -15,5 +15,5 @@ func logTrace(err error) error {
 	fullName := fmt.Sprintf("%s", runtime.FuncForPC(pc).Name())
 	methodName := strings.Split(fullName, "/")[len(strings.Split(fullName, "/"))-1]
 
-	return fmt.Errorf("%v: %v", methodName, err.Error())
+	return fmt.Errorf("%v: - %v", methodName, err.Error())
 }

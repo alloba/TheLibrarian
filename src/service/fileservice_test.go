@@ -57,3 +57,16 @@ func TestFileService_createFileContainer(t *testing.T) {
 		})
 	}
 }
+
+func TestFileService_WriteContainerToArchive_MANUALVERIFY(t *testing.T) {
+	service := NewFileService("../../out/filebin")
+	container, err := service.createFileContainer("./fileservice_test.go")
+	if err != nil {
+		t.Fatalf("failed init process - container creation - %v", err.Error())
+	}
+
+	err = service.WriteContainerToArchive(container)
+	if err != nil {
+		t.Fatalf("failed writing process - %v", err.Error())
+	}
+}

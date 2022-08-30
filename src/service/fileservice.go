@@ -14,9 +14,9 @@ type FileService struct {
 	archiveBasePath string
 }
 
-func NewFileService(arhiveBasePath string) *FileService {
+func NewFileService(archiveBasePath string) *FileService {
 	return &FileService{
-		archiveBasePath: arhiveBasePath,
+		archiveBasePath: archiveBasePath,
 	}
 }
 
@@ -29,7 +29,94 @@ type FileContainer struct {
 	DestinationPath string
 	DestinationName string
 	DestinationExt  string
-	FileInfo        os.FileInfo
+	SourceFileInfo  os.FileInfo
+}
+
+func (service FileService) WriteContainerToArchive(container *FileContainer) error {
+	childContainers := make([]FileContainer, 0)
+	if container.IsDir {
+		childs, err := service.getChildrenContainers(container)
+		if err != nil {
+			return logTrace(err)
+		}
+		childContainers = *childs
+	} else {
+		err := service.copyfile(container)
+		if err != nil {
+			return logTrace(err)
+		}
+	}
+
+	for _, child := range childContainers {
+		if !child.IsDir {
+			err := service.copyfile(&child)
+			if err != nil {
+				return logTrace(err)
+			}
+		}
+	}
+	return nil
+}
+
+func (service FileService) checkArchiveForAllowedHash(hash string) (bool, error) {
+	var allow = true
+	err := filepath.Walk(service.archiveBasePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		//fmt.Printf("dir: %v: name: %s\n", info.IsDir(), path)
+		if !info.IsDir() {
+			if hash == strings.Split(info.Name(), ".")[0] {
+				allow = false //TODO: should additionally verify the actual hash of the found file.
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return false, logTrace(fmt.Errorf("could not form child containers - %v", err.Error()))
+	}
+	return allow, nil
+}
+
+func (service FileService) copyfile(container *FileContainer) error {
+	if !container.SourceFileInfo.Mode().IsRegular() {
+		return logTrace(fmt.Errorf("specified file is not regular [%v]", container.OriginPath))
+	}
+
+	allow, err := service.checkArchiveForAllowedHash(container.Hash)
+	if err != nil {
+		return logTrace(err)
+	}
+	if !allow {
+		return nil // im not going to throw an error for not copying a file that already supposedly exists. just skip it.
+		// TODO: technically possible to mismatch filename vs actual hashed file contents. should verify.
+	}
+
+	source, err := os.Open(container.OriginPath)
+	if err != nil {
+		return logTrace(err)
+	}
+	defer func(file *os.File) {
+		cerr := file.Close()
+		if err == nil {
+			err = cerr
+		}
+	}(source)
+
+	destination, err := os.Create(container.DestinationPath)
+	if err != nil {
+		return logTrace(err)
+	}
+	defer func(file *os.File) {
+		cerr := file.Close()
+		if err == nil {
+			err = cerr
+		}
+	}(destination)
+
+	_, err = io.Copy(destination, source)
+	return nil
 }
 
 func (service FileService) getChildrenContainers(container *FileContainer) (*[]FileContainer, error) {
@@ -52,7 +139,7 @@ func (service FileService) getChildrenContainers(container *FileContainer) (*[]F
 		return nil
 	})
 	if err != nil {
-		return nil, logTrace(err)
+		return nil, logTrace(fmt.Errorf("could not form child containers - %v", err.Error()))
 	}
 	return &x, nil
 }
@@ -125,7 +212,7 @@ func (service FileService) createFileContainer(path string) (*FileContainer, err
 		DestinationPath: destPath,
 		DestinationName: destName,
 		DestinationExt:  destExt,
-		FileInfo:        fileInfo,
+		SourceFileInfo:  fileInfo,
 	}, nil
 }
 
