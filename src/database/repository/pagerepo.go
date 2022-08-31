@@ -48,6 +48,15 @@ func (repo PageRepo) FindOneByRecordAndEdition(recordId string, editionId string
 	return &res, nil
 }
 
+func (repo PageRepo) FindAllByChapterId(chapterId string) (*[]database.Page, error) {
+	res := make([]database.Page, 0)
+	err := repo.db.Where("chapter_id = ?", chapterId).Find(&res).Error
+	if err != nil {
+		return nil, logTrace(err)
+	}
+	return &res, nil
+}
+
 func (repo PageRepo) CreateOne(Page *database.Page) error {
 	if err := repo.db.Create(Page).Error; err != nil {
 		return logTrace(err)

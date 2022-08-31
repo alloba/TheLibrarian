@@ -3,6 +3,7 @@ package service
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/alloba/TheLibrarian/database"
 	"io"
 	"os"
 	"os/user"
@@ -41,7 +42,7 @@ func (service FileService) WriteContainerToArchive(container *FileContainer) err
 		}
 		childContainers = *childs
 	} else {
-		err := service.copyfile(container)
+		err := service.copyFileToArchive(container)
 		if err != nil {
 			return logTrace(err)
 		}
@@ -49,7 +50,7 @@ func (service FileService) WriteContainerToArchive(container *FileContainer) err
 
 	for _, child := range childContainers {
 		if !child.IsDir {
-			err := service.copyfile(&child)
+			err := service.copyFileToArchive(&child)
 			if err != nil {
 				return logTrace(err)
 			}
@@ -58,8 +59,8 @@ func (service FileService) WriteContainerToArchive(container *FileContainer) err
 	return nil
 }
 
-func (service FileService) checkArchiveForAllowedHash(hash string) (bool, error) {
-	var allow = true
+func (service FileService) checkArchiveForExistinHash(hash string) (bool, error) {
+	var exist = true
 	err := filepath.Walk(service.archiveBasePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
@@ -68,7 +69,7 @@ func (service FileService) checkArchiveForAllowedHash(hash string) (bool, error)
 		//fmt.Printf("dir: %v: name: %s\n", info.IsDir(), path)
 		if !info.IsDir() {
 			if hash == strings.Split(info.Name(), ".")[0] {
-				allow = false //TODO: should additionally verify the actual hash of the found file.
+				exist = false //TODO: should additionally verify the actual hash of the found file.
 			}
 		}
 		return nil
@@ -76,24 +77,32 @@ func (service FileService) checkArchiveForAllowedHash(hash string) (bool, error)
 	if err != nil {
 		return false, logTrace(fmt.Errorf("could not form child containers - %v", err.Error()))
 	}
-	return allow, nil
+	return !exist, nil //todo i flipped this logic from an inverse operation, i should rewrite things to assume false instead of true for clarity.
 }
 
-func (service FileService) copyfile(container *FileContainer) error {
+func (service FileService) copyFileToArchive(container *FileContainer) error {
 	if !container.SourceFileInfo.Mode().IsRegular() {
 		return logTrace(fmt.Errorf("specified file is not regular [%v]", container.OriginPath))
 	}
 
-	allow, err := service.checkArchiveForAllowedHash(container.Hash)
+	exist, err := service.checkArchiveForExistinHash(container.Hash)
 	if err != nil {
 		return logTrace(err)
 	}
-	if !allow {
+	if exist {
 		return nil // im not going to throw an error for not copying a file that already supposedly exists. just skip it.
 		// TODO: technically possible to mismatch filename vs actual hashed file contents. should verify.
 	}
 
-	source, err := os.Open(container.OriginPath)
+	err = copyFile(container.OriginPath, container.DestinationPath)
+	if err != nil {
+		return logTrace(err)
+	}
+	return nil
+}
+
+func copyFile(sourcePath string, destinationPath string) error {
+	source, err := os.Open(sourcePath)
 	if err != nil {
 		return logTrace(err)
 	}
@@ -104,7 +113,7 @@ func (service FileService) copyfile(container *FileContainer) error {
 		}
 	}(source)
 
-	destination, err := os.Create(container.DestinationPath)
+	destination, err := os.Create(destinationPath)
 	if err != nil {
 		return logTrace(err)
 	}
@@ -218,48 +227,50 @@ func (service FileService) createFileContainer(path string) (*FileContainer, err
 	}, nil
 }
 
-//func (service FileService) findNearestParentPath(containers *[]FileContainer) (string, error) {
-//	if len(containers) == 0 {
-//		return "", nil
-//	}
-//	if len(containers) == 1 {
-//		fullDir := filepath.Dir(containers[0].OriginName)
-//		return strings.Split(fullDir, string(filepath.Separator))[len(strings.Split(fullDir, string(filepath.Separator)))-1], nil
-//	}
-//
-//	paths := make([]string, 0)
-//	for _, s := range containers {
-//		paths = append(paths, s.OriginPath)
-//	}
-//
-//	commonPath := findMostCommonPrefix(paths...)
-//	if commonPath == "" {
-//		return "", fmt.Errorf("no common parent path found for containers")
-//	}
-//	fullDir := filepath.Dir(commonPath) //TODO make sure that common path is formatted in a good way for this. should be, but make sure.
-//	return strings.Split(fullDir, string(filepath.Separator))[len(strings.Split(fullDir, string(filepath.Separator)))-1], nil
-//}
+type PageRecordPair struct {
+	page   *database.Page
+	record *database.Record
+}
 
-////fully ripped off from https://medium.com/codex/leetcode-with-golang-longest-common-prefix-89d856b0749b
-//func findMostCommonPrefix(inStrings ...string) string {
-//	var longestPrefix = ""
-//	var endPrefix = false
-//
-//	if len(inStrings) > 0 {
-//		sort.Strings(inStrings)
-//		first := inStrings[0]
-//		last := inStrings[len(inStrings)-1]
-//
-//		for i := 0; i < len(first); i++ {
-//			if !endPrefix && string(last[i]) == string(first[i]) {
-//				longestPrefix += string(last[i])
-//			} else {
-//				endPrefix = true
-//			}
-//		}
-//	}
-//	return longestPrefix
-//}
+func (service FileService) WritePageAssociationsToDestination(pageRecPairs *[]PageRecordPair, destination string, subfolder string) error {
+	//verify directory exists
+	qPath, err := getQualifiedPath(destination)
+	if err != nil {
+		return logTrace(err)
+	}
+
+	destStats, err := os.Stat(qPath)
+	if err != nil {
+		return logTrace(err)
+	}
+	if !destStats.IsDir() {
+		return logTrace(fmt.Errorf("destination is not a directory [%v]", qPath))
+	}
+
+	subfolderQualified, err := getQualifiedPath(qPath + subfolder)
+	if err != nil {
+		return logTrace(err)
+	}
+	err = os.MkdirAll(subfolderQualified, 755) //mkdir all does not fail on existing directories
+	if err != nil {
+		return logTrace(err)
+	}
+
+	for _, pair := range *pageRecPairs {
+		source := pair.record.FilePointer
+		dest := subfolderQualified + string(filepath.Separator) + pair.page.RelativePath
+		lastIndexOfSep := strings.LastIndex(dest, string(filepath.Separator))
+		err = os.MkdirAll(dest[:lastIndexOfSep], 755)
+		if err != nil {
+			return logTrace(err)
+		}
+		err = copyFile(source, dest)
+		if err != nil {
+			return logTrace(err)
+		}
+	}
+	return nil
+}
 
 func calculateHash(file *os.File) (string, error) {
 	h := sha256.New()
@@ -291,11 +302,11 @@ func getQualifiedPath(path string) (string, error) {
 	if err != nil {
 		return "", logTrace(err)
 	}
+
 	stat, err := os.Stat(path)
 	if err != nil {
-		return "", logTrace(err)
+		return path, nil //dont fail on a path that doesnt exist. but if it is there, continue on to see if a path separator should be appended as well.
 	}
-
 	if stat.IsDir() {
 		path = path + string(os.PathSeparator)
 	}
