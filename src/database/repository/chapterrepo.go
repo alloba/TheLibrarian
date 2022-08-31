@@ -22,6 +22,15 @@ func (repo ChapterRepo) FindOneByNameAndEdition(ChapterName string, editionId in
 	return &res, nil
 }
 
+func (repo ChapterRepo) FindAllByEditionId(editionId string) (*[]database.Chapter, error) {
+	res := make([]database.Chapter, 0)
+	err := repo.db.Where("edition_id = ?", editionId).Find(&res).Error
+	if err != nil {
+		return nil, logTrace(err)
+	}
+	return &res, nil
+}
+
 func (repo ChapterRepo) Exists(ChapterId string) (bool, error) {
 	var exists bool
 	err := repo.db.Model(&database.Chapter{}).

@@ -34,6 +34,7 @@ type Page struct {
 	ID           string    `gorm:"column:id"            gorm:"primaryKey"`
 	RecordID     string    `gorm:"column:record_id"     gorm:"not null"`
 	ChapterID    string    `gorm:"column:chapter_id"    gorm:"not null"`
+	RelativePath string    `gorm:"column:relative_path" gorm:"not null"`
 	DateCreated  time.Time `gorm:"column:date_created"  gorm:"not null"`
 	DateModified time.Time `gorm:"column:date_modified" gorm:"not null"`
 }
