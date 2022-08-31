@@ -35,7 +35,7 @@ type FileContainer struct {
 func (service FileService) WriteContainerToArchive(container *FileContainer) error {
 	childContainers := make([]FileContainer, 0)
 	if container.IsDir {
-		childs, err := service.getChildrenContainers(container)
+		childs, err := service.getChildrenContainers(container, true)
 		if err != nil {
 			return logTrace(err)
 		}
@@ -119,7 +119,7 @@ func (service FileService) copyfile(container *FileContainer) error {
 	return nil
 }
 
-func (service FileService) getChildrenContainers(container *FileContainer) (*[]FileContainer, error) {
+func (service FileService) getChildrenContainers(container *FileContainer, onlyFiles bool) (*[]FileContainer, error) {
 	x := make([]FileContainer, 0)
 	if !container.IsDir {
 		return &x, nil
@@ -135,7 +135,9 @@ func (service FileService) getChildrenContainers(container *FileContainer) (*[]F
 		if err != nil {
 			return err
 		}
-		x = append(x, *childContainer)
+		if (childContainer.IsDir && onlyFiles == false) || (!childContainer.IsDir && onlyFiles == true) {
+			x = append(x, *childContainer)
+		}
 		return nil
 	})
 	if err != nil {
@@ -215,6 +217,49 @@ func (service FileService) createFileContainer(path string) (*FileContainer, err
 		SourceFileInfo:  fileInfo,
 	}, nil
 }
+
+//func (service FileService) findNearestParentPath(containers *[]FileContainer) (string, error) {
+//	if len(containers) == 0 {
+//		return "", nil
+//	}
+//	if len(containers) == 1 {
+//		fullDir := filepath.Dir(containers[0].OriginName)
+//		return strings.Split(fullDir, string(filepath.Separator))[len(strings.Split(fullDir, string(filepath.Separator)))-1], nil
+//	}
+//
+//	paths := make([]string, 0)
+//	for _, s := range containers {
+//		paths = append(paths, s.OriginPath)
+//	}
+//
+//	commonPath := findMostCommonPrefix(paths...)
+//	if commonPath == "" {
+//		return "", fmt.Errorf("no common parent path found for containers")
+//	}
+//	fullDir := filepath.Dir(commonPath) //TODO make sure that common path is formatted in a good way for this. should be, but make sure.
+//	return strings.Split(fullDir, string(filepath.Separator))[len(strings.Split(fullDir, string(filepath.Separator)))-1], nil
+//}
+
+////fully ripped off from https://medium.com/codex/leetcode-with-golang-longest-common-prefix-89d856b0749b
+//func findMostCommonPrefix(inStrings ...string) string {
+//	var longestPrefix = ""
+//	var endPrefix = false
+//
+//	if len(inStrings) > 0 {
+//		sort.Strings(inStrings)
+//		first := inStrings[0]
+//		last := inStrings[len(inStrings)-1]
+//
+//		for i := 0; i < len(first); i++ {
+//			if !endPrefix && string(last[i]) == string(first[i]) {
+//				longestPrefix += string(last[i])
+//			} else {
+//				endPrefix = true
+//			}
+//		}
+//	}
+//	return longestPrefix
+//}
 
 func calculateHash(file *os.File) (string, error) {
 	h := sha256.New()

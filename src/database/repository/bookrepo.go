@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"github.com/alloba/TheLibrarian/database"
 	"gorm.io/gorm"
 )
@@ -46,6 +47,22 @@ func (repo BookRepo) ExistsByName(bookName string) (bool, error) {
 		return false, logTrace(err)
 	}
 	return exists, nil
+}
+
+func (repo BookRepo) ExistAndFetchByName(bookName string) (*database.Book, error) {
+	exist, err := repo.ExistsByName(bookName)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+	if !exist {
+		return nil, logTrace(fmt.Errorf("cannot fetch book [%v] that does not exist", bookName))
+	}
+
+	book, err := repo.FindOneByName(bookName)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+	return book, nil
 }
 
 func (repo BookRepo) CreateOne(book *database.Book) error {

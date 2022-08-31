@@ -5,7 +5,8 @@ import (
 	"github.com/alloba/TheLibrarian/database"
 	"github.com/alloba/TheLibrarian/database/repository"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -18,112 +19,151 @@ func NewEditionManagerService(repoManager *repository.RepoManager, fileService *
 	return &EditionManagerService{repoManager: repoManager, fileService: fileService}
 }
 
-func (service EditionManagerService) CreateNewEditionInNamedBook(bookName string, editionName string, systemPath string) (*database.Edition, error) {
+func (service EditionManagerService) CreateNewBook(bookName string) (*database.Book, error) {
 	bookExist, err := service.repoManager.Book.ExistsByName(bookName)
 	if err != nil {
 		return nil, logTrace(err)
 	}
 
-	var book *database.Book
-	if !bookExist {
-		book = &database.Book{
-			ID:           uuid.New().String(),
-			Name:         bookName,
-			DateCreated:  time.Now(),
-			DateModified: time.Now(),
-		}
-	} else {
-		foundBook, err := service.repoManager.Book.FindOneByName(bookName)
-		if err != nil {
-			return nil, logTrace(err)
-		}
-		book = foundBook
+	if bookExist {
+		return nil, logTrace(fmt.Errorf("cannot create book that already exists with name %v", bookName))
 	}
 
-	nextEdition, err := service.repoManager.Edition.FindNextEditionNumber(book.ID)
+	var book = &database.Book{
+		ID:           uuid.New().String(),
+		Name:         bookName,
+		DateCreated:  time.Now(),
+		DateModified: time.Now(),
+	}
+	err = service.repoManager.Book.CreateOne(book)
 	if err != nil {
 		return nil, logTrace(err)
 	}
-	var edition = &database.Edition{
+	return book, nil
+}
+
+func (service EditionManagerService) CreateNewEdition(bookName string, editionName string, chapterPaths ...string) (*database.Edition, error) {
+	book, err := service.repoManager.Book.ExistAndFetchByName(bookName)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+
+	nextEditionNum, err := service.repoManager.Edition.FindNextEditionNumber(book.ID)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+
+	edition := &database.Edition{
 		ID:            uuid.New().String(),
 		Name:          editionName,
-		EditionNumber: nextEdition,
+		EditionNumber: nextEditionNum,
 		BookID:        book.ID,
 		DateCreated:   time.Now(),
 		DateModified:  time.Now(),
 	}
-
-	rootFileContainer, err := service.fileService.createFileContainer(systemPath)
-	if err != nil {
-		return nil, logTrace(err)
-	}
-	if !rootFileContainer.IsDir {
-		return nil, fmt.Errorf("must provide a folder to create an edition, not a single file - %v", systemPath)
-	}
-
-	children, err := service.fileService.getChildrenContainers(rootFileContainer)
+	err = service.repoManager.Edition.CreateOne(edition)
 	if err != nil {
 		return nil, logTrace(err)
 	}
 
-	records := make([]database.Record, 0)
-	for _, child := range *children {
-		rec, err := service.recordFromFileContainer(&child)
+	if len(chapterPaths) == 0 {
+		return edition, nil
+	}
+
+	for _, path := range chapterPaths {
+		_, err = service.CreateNewChapter(path, edition.ID)
 		if err != nil {
 			return nil, logTrace(err)
 		}
-		if !child.IsDir {
-			records = append(records, *rec)
-		}
-	}
-
-	pages := make([]database.Page, 0)
-	for _, record := range records {
-		page := service.pageFromRecordAndEdition(&record, edition.ID)
-		pages = append(pages, *page)
-	}
-
-	// it doesnt use the tx object directly, but this seems to work fine as a transaction.
-	err = service.repoManager.Db.Transaction(func(tx *gorm.DB) error {
-		for _, container := range *children {
-			err := service.fileService.WriteContainerToArchive(&container)
-			if err != nil {
-				return logTrace(err)
-			}
-		}
-
-		if !bookExist {
-			err = service.repoManager.Book.CreateOne(book)
-			if err != nil {
-				return err
-			}
-		}
-
-		err = service.repoManager.Record.UpsertAll(&records)
-		if err != nil {
-			return err
-		}
-
-		err = service.repoManager.Page.UpsertAll(&pages)
-		if err != nil {
-			return err
-		}
-
-		err = service.repoManager.Edition.CreateOne(edition)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, logTrace(err)
 	}
 
 	return edition, nil
 }
 
-func (service EditionManagerService) recordFromFileContainer(container *FileContainer) (*database.Record, error) {
+func (service EditionManagerService) CreateNewChapter(chapterPath string, editionId string) (*database.Chapter, error) {
+	exist, err := service.repoManager.Edition.Exists(editionId)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+	if !exist {
+		return nil, logTrace(fmt.Errorf("edition [%v] does not exist", editionId))
+	}
+
+	fileContainer, err := service.fileService.createFileContainer(chapterPath)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+	if !fileContainer.IsDir {
+		return nil, logTrace(fmt.Errorf("cannot create chapter out of a file [%v]", chapterPath))
+	}
+
+	children, err := service.fileService.getChildrenContainers(fileContainer, true)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+	//closestBasePath, err := service.fileService.findNearestParentPath(children)
+	//if err != nil {
+	//	return nil, logTrace(err)
+	//}
+
+	dirPieces := strings.Split(fileContainer.OriginName, string(filepath.Separator))
+	closestBareDirName := dirPieces[len(dirPieces)-1]
+	closestBareDirName = strings.TrimSuffix(strings.TrimPrefix(closestBareDirName, string(filepath.Separator)), string(filepath.Separator))
+
+	chapter := &database.Chapter{
+		ID:           uuid.New().String(),
+		EditionID:    editionId,
+		RootPath:     closestBareDirName,
+		Name:         "",
+		DateCreated:  time.Now(),
+		DateModified: time.Now(),
+	}
+	err = service.repoManager.Chapter.CreateOne(chapter)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+
+	for _, child := range *children {
+		err := service.fileService.WriteContainerToArchive(&child)
+		if err != nil {
+			return nil, logTrace(err)
+		}
+		_, err = service.CreateNewPageAndAttachRecord(chapter.ID, &child)
+		if err != nil {
+			return nil, logTrace(err)
+		}
+	}
+	return chapter, nil
+}
+
+func (service EditionManagerService) CreateNewPageAndAttachRecord(chapterId string, fileContainer *FileContainer) (*database.Page, error) {
+	if fileContainer.IsDir {
+		return nil, fmt.Errorf("cannot create page/record out of directory [%v]", fileContainer.OriginPath)
+	}
+
+	rec, err := service.CreateOrFindRecordForContainer(fileContainer)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+
+	page := &database.Page{
+		ID:           uuid.New().String(),
+		RecordID:     rec.ID,
+		ChapterID:    chapterId,
+		DateCreated:  time.Now(),
+		DateModified: time.Now(),
+	}
+
+	err = service.repoManager.Page.CreateOne(page)
+	if err != nil {
+		return nil, logTrace(err)
+	}
+
+	return page, nil
+
+}
+
+func (service EditionManagerService) CreateOrFindRecordForContainer(container *FileContainer) (*database.Record, error) {
 	var record *database.Record
 	exists, err := service.repoManager.Record.Exists(container.Hash)
 	if err != nil {
@@ -146,21 +186,15 @@ func (service EditionManagerService) recordFromFileContainer(container *FileCont
 			DateCreated:      time.Now(),
 			DateModified:     time.Now(),
 		}
+		err := service.repoManager.Record.CreateOne(record)
+		if err != nil {
+			return nil, logTrace(err)
+		}
 	}
 	return record, nil
 }
 
-func (service EditionManagerService) pageFromRecordAndEdition(record *database.Record, editionId string) *database.Page {
-	return &database.Page{
-		ID:           uuid.New().String(),
-		RecordID:     record.ID,
-		EditionID:    editionId,
-		DateCreated:  time.Now(),
-		DateModified: time.Now(),
-	}
-}
+//TODO actual data recovery
+func (service EditionManagerService) DownloadEdition(bookName string, editionNum int, destinationFolder string) error {
 
-//TODO data export.
-//	- download edition - provide the root destination path. then find the common root for all records in the edition. make directory tree under destination after stripping common root
-//	- download particular record - provide destination, copy based on record name (not path at all)
-//	- download entire book - same as download edition, but multiple root directories labeled as edition number + name
+}

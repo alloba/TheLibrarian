@@ -35,19 +35,6 @@ func getTestRecord(id string) *database.Record {
 	}
 }
 
-func getTestPage(id string, editionId string) *database.Page {
-	record := getTestRecord("testRecordAssociatedWithPage" + id)
-	//edition := getTestEdition("testEditionAssociatedWithPage" + id)
-
-	return &database.Page{
-		ID:           id,
-		RecordID:     record.ID,
-		EditionID:    editionId,
-		DateCreated:  time.Now(),
-		DateModified: time.Now(),
-	}
-}
-
 func getTestBook(id string) *database.Book {
 	return &database.Book{
 		ID:           id,
@@ -63,6 +50,7 @@ func WipeTestDatabase(db *gorm.DB) {
 	//delete book
 	//delete record
 	db.Where("1=1").Delete(&database.Page{})
+	db.Where("1=1").Delete(&database.Chapter{})
 	db.Where("1=1").Delete(&database.Edition{})
 	db.Where("1=1").Delete(&database.Book{})
 	db.Where("1=1").Delete(&database.Record{})
