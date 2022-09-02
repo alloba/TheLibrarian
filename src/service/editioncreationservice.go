@@ -11,16 +11,16 @@ import (
 	"time"
 )
 
-type EditionManagerService struct {
+type EditionCreationService struct {
 	repoManager *repository.RepoManager
 	fileService *FileService
 }
 
-func NewEditionManagerService(repoManager *repository.RepoManager, fileService *FileService) *EditionManagerService {
-	return &EditionManagerService{repoManager: repoManager, fileService: fileService}
+func NewEditionManagerService(repoManager *repository.RepoManager, fileService *FileService) *EditionCreationService {
+	return &EditionCreationService{repoManager: repoManager, fileService: fileService}
 }
 
-func (service EditionManagerService) CreateNewBook(bookName string) (*database.Book, error) {
+func (service EditionCreationService) CreateNewBook(bookName string) (*database.Book, error) {
 	bookExist, err := service.repoManager.Book.ExistsByName(bookName)
 	if err != nil {
 		return nil, logTrace(err)
@@ -43,7 +43,7 @@ func (service EditionManagerService) CreateNewBook(bookName string) (*database.B
 	return book, nil
 }
 
-func (service EditionManagerService) CreateNewEdition(bookName string, chapterPaths ...string) (*database.Edition, error) {
+func (service EditionCreationService) CreateNewEdition(bookName string, chapterPaths ...string) (*database.Edition, error) {
 	book, err := service.repoManager.Book.ExistAndFetchByName(bookName)
 	if err != nil {
 		return nil, logTrace(err)
@@ -81,7 +81,7 @@ func (service EditionManagerService) CreateNewEdition(bookName string, chapterPa
 	return edition, nil
 }
 
-func (service EditionManagerService) CreateNewChapter(chapterPath string, editionId string) (*database.Chapter, error) {
+func (service EditionCreationService) CreateNewChapter(chapterPath string, editionId string) (*database.Chapter, error) {
 	exist, err := service.repoManager.Edition.Exists(editionId)
 	if err != nil {
 		return nil, logTrace(err)
@@ -133,7 +133,7 @@ func (service EditionManagerService) CreateNewChapter(chapterPath string, editio
 	return chapter, nil
 }
 
-func (service EditionManagerService) CreateNewPageAndAttachRecord(chapter *database.Chapter, fileContainer *FileContainer) (*database.Page, error) {
+func (service EditionCreationService) CreateNewPageAndAttachRecord(chapter *database.Chapter, fileContainer *FileContainer) (*database.Page, error) {
 	if fileContainer.IsDir {
 		return nil, fmt.Errorf("cannot create page/record out of directory [%v]", fileContainer.OriginPath)
 	}
@@ -161,7 +161,7 @@ func (service EditionManagerService) CreateNewPageAndAttachRecord(chapter *datab
 
 }
 
-func (service EditionManagerService) CreateOrFindRecordForContainer(container *FileContainer) (*database.Record, error) {
+func (service EditionCreationService) CreateOrFindRecordForContainer(container *FileContainer) (*database.Record, error) {
 	var record *database.Record
 	exists, err := service.repoManager.Record.Exists(container.Hash)
 	if err != nil {
@@ -192,7 +192,7 @@ func (service EditionManagerService) CreateOrFindRecordForContainer(container *F
 	return record, nil
 }
 
-func (service EditionManagerService) DownloadEdition(bookName string, editionNum int, destinationFolder string) error {
+func (service EditionCreationService) DownloadEdition(bookName string, editionNum int, destinationFolder string) error {
 	bookExist, err := service.repoManager.Book.ExistsByName(bookName)
 	if err != nil {
 		return logTrace(err)
