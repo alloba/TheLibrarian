@@ -43,7 +43,7 @@ func (service EditionManagerService) CreateNewBook(bookName string) (*database.B
 	return book, nil
 }
 
-func (service EditionManagerService) CreateNewEdition(bookName string, editionName string, chapterPaths ...string) (*database.Edition, error) {
+func (service EditionManagerService) CreateNewEdition(bookName string, chapterPaths ...string) (*database.Edition, error) {
 	book, err := service.repoManager.Book.ExistAndFetchByName(bookName)
 	if err != nil {
 		return nil, logTrace(err)
@@ -56,7 +56,7 @@ func (service EditionManagerService) CreateNewEdition(bookName string, editionNa
 
 	edition := &database.Edition{
 		ID:            uuid.New().String(),
-		Name:          editionName,
+		Name:          "",
 		EditionNumber: nextEditionNum,
 		BookID:        book.ID,
 		DateCreated:   time.Now(),
@@ -102,10 +102,6 @@ func (service EditionManagerService) CreateNewChapter(chapterPath string, editio
 	if err != nil {
 		return nil, logTrace(err)
 	}
-	//closestBasePath, err := service.fileService.findNearestParentPath(children)
-	//if err != nil {
-	//	return nil, logTrace(err)
-	//}
 
 	dirPieces := strings.Split(fileContainer.OriginName, string(filepath.Separator))
 	closestBareDirName := dirPieces[len(dirPieces)-1]
