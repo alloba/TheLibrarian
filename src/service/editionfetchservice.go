@@ -12,6 +12,8 @@ type EditionFetchService struct {
 	fileService *FileService
 }
 
+type
+
 func NewEditionFetchService(repoManager *repository.RepoManager, fileService *FileService) *EditionFetchService {
 	return &EditionFetchService{repoManager: repoManager, fileService: fileService}
 }
@@ -72,3 +74,5 @@ func (service EditionFetchService) DownloadEdition(bookName string, editionNum i
 
 	return nil
 }
+
+
