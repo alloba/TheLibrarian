@@ -5,6 +5,9 @@ import (
 	"log"
 )
 
+//TODO i'd like a consolidated logTrace function. should probably move to it's own package...
+
+
 func main() {
 	log.Println("Initializing the Librarian")
 
