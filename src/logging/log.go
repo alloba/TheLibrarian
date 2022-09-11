@@ -1,4 +1,4 @@
-package service
+package logging 
 
 import (
 	"fmt"
