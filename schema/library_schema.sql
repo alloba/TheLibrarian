@@ -21,21 +21,10 @@ create table if not exists pages
 (
     id            TEXT     not null primary key unique,
     record_id     TEXT     not null references records,
-    chapter_id    TEXT     not null references chapters,
+    edition_id    TEXT     not null references editions,
     relative_path TEXT     not null,
     date_created  datetime not null,
     date_modified datetime not null
-);
-
-create table if not exists chapters
-(
-    id            TEXT     not null primary key unique,
-    edition_id    TEXT     not null references editions,
-    root_path     TEXT     not null,
-    name          TEXT     not null,
-    date_created  datetime not null,
-    date_modified datetime not null,
-    unique (edition_id, name)
 );
 
 create table if not exists editions
