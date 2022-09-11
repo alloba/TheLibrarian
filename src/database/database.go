@@ -10,7 +10,6 @@ import (
 func Connect(connectionString string) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(connectionString), &gorm.Config{
 		Logger:                                   logger.Default.LogMode(logger.Info),
-		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		log.Panicf("Connect: unable to connect to database; %v", err.Error())
