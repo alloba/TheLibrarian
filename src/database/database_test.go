@@ -2,9 +2,11 @@ package database
 
 import (
 	"testing"
+	"github.com/alloba/TheLibrarian/configuration"
 )
 
 var dbPath = "../../out/library_integration_test.db"
+var config = configuration.NewLibraryConfig(dbPath, "")
 
 func TestConnect(t *testing.T) {
 	t.Run("successfulConnect", func(t *testing.T) {

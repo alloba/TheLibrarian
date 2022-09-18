@@ -2,7 +2,7 @@
 // This is expected to be created before pretty much anything else when the app starts, 
 // and should be used to initialize connections out (database), and service config 
 
-package main 
+package configuration 
 
 
 // TODO: annotate fields and sort out loading from a config file. 
