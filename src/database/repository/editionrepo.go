@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/alloba/TheLibrarian/database"
+	"github.com/alloba/TheLibrarian/logging"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +22,7 @@ func (repo EditionRepo) Exists(EditionId string) (bool, error) {
 		Find(&exists).Error
 
 	if err != nil {
-		return false, logTrace(err)
+		return false, logging.LogTrace(err)
 	}
 	return exists, nil
 }
@@ -33,7 +34,7 @@ func (repo EditionRepo) ExistByBookIdAndEditionNumber(bookId string, editionNumb
 		Where("book_id = ? and edition_number = ?", bookId, editionNumber).
 		Find(&exist).Error
 	if err != nil {
-		return false, logTrace(err)
+		return false, logging.LogTrace(err)
 	}
 	return exist, nil
 }
@@ -43,7 +44,7 @@ func (repo EditionRepo) FindByBookIdAndEditionNumber(bookId string, editionNumbe
 	err := repo.db.Where("book_id = ? and edition_number = ?", bookId, editionNumber).Find(res).Error
 
 	if err != nil {
-		return nil, logTrace(err)
+		return nil, logging.LogTrace(err)
 	}
 	return res, nil
 }
@@ -56,7 +57,7 @@ func (repo EditionRepo) FindNextEditionNumber(bookId string) (int, error) {
 		Find(&exists).Error
 
 	if err != nil {
-		return 0, logTrace(err)
+		return 0, logging.LogTrace(err)
 	}
 	if !exists {
 		return 0, nil
@@ -64,7 +65,7 @@ func (repo EditionRepo) FindNextEditionNumber(bookId string) (int, error) {
 		var num = 0
 		err := repo.db.Model(&database.Edition{}).Select("edition_number").Where("book_id = ?", bookId).Order("edition_number desc").Limit(1).Find(&num).Error
 		if err != nil {
-			return 0, logTrace(err)
+			return 0, logging.LogTrace(err)
 		}
 		return num + 1, nil
 	}
@@ -73,7 +74,7 @@ func (repo EditionRepo) FindNextEditionNumber(bookId string) (int, error) {
 
 func (repo EditionRepo) CreateOne(Edition *database.Edition) error {
 	if err := repo.db.Create(Edition).Error; err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }
@@ -81,7 +82,7 @@ func (repo EditionRepo) CreateOne(Edition *database.Edition) error {
 func (repo EditionRepo) DeleteOne(EditionId string) error {
 	exist, err := repo.Exists(EditionId)
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 
 	if !exist {
@@ -90,7 +91,7 @@ func (repo EditionRepo) DeleteOne(EditionId string) error {
 
 	err = repo.db.Where("id = ?", EditionId).Delete(&database.Edition{}).Error
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }

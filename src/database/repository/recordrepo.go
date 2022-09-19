@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/alloba/TheLibrarian/database"
+	"github.com/alloba/TheLibrarian/logging"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +18,7 @@ func (repo RecordRepo) FindOne(recordId string) (*database.Record, error) {
 	res := database.Record{}
 	err := repo.db.Where("id = ?", recordId).First(&res).Error
 	if err != nil {
-		return nil, logTrace(err)
+		return nil, logging.LogTrace(err)
 	}
 	return &res, nil
 }
@@ -30,14 +31,14 @@ func (repo RecordRepo) Exists(recordId string) (bool, error) {
 		Find(&exists).Error
 
 	if err != nil {
-		return false, logTrace(err)
+		return false, logging.LogTrace(err)
 	}
 	return exists, nil
 }
 
 func (repo RecordRepo) CreateOne(record *database.Record) error {
 	if err := repo.db.Create(record).Error; err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }
@@ -47,13 +48,13 @@ func (repo RecordRepo) UpsertAll(records *[]database.Record) error {
 		for _, rec := range *records {
 			err := tx.Save(rec).Error
 			if err != nil {
-				return logTrace(err)
+				return logging.LogTrace(err)
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }
@@ -61,7 +62,7 @@ func (repo RecordRepo) UpsertAll(records *[]database.Record) error {
 func (repo RecordRepo) DeleteOne(recordId string) error {
 	exist, err := repo.Exists(recordId)
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 
 	if !exist {
@@ -70,7 +71,7 @@ func (repo RecordRepo) DeleteOne(recordId string) error {
 
 	err = repo.db.Where("id = ?", recordId).Delete(&database.Record{}).Error
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }

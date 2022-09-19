@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/alloba/TheLibrarian/database"
+	"github.com/alloba/TheLibrarian/logging"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +22,7 @@ func (repo PageRepo) Exists(PageId string) (bool, error) {
 		Find(&exists).Error
 
 	if err != nil {
-		return false, logTrace(err)
+		return false, logging.LogTrace(err)
 	}
 	return exists, nil
 }
@@ -34,7 +35,7 @@ func (repo PageRepo) ExistsByRecordAndEdition(recordId string, editionId string)
 		Find(&exists).Error
 
 	if err != nil {
-		return false, logTrace(err)
+		return false, logging.LogTrace(err)
 	}
 	return exists, nil
 }
@@ -43,7 +44,7 @@ func (repo PageRepo) FindOneByRecordAndEdition(recordId string, editionId string
 	res := database.Page{}
 	err := repo.db.Where("record_id = ? and edition_id = ?", recordId, editionId).First(&res).Error
 	if err != nil {
-		return nil, logTrace(err)
+		return nil, logging.LogTrace(err)
 	}
 	return &res, nil
 }
@@ -52,14 +53,14 @@ func (repo PageRepo) FindAllByChapterId(chapterId string) (*[]database.Page, err
 	res := make([]database.Page, 0)
 	err := repo.db.Where("chapter_id = ?", chapterId).Find(&res).Error
 	if err != nil {
-		return nil, logTrace(err)
+		return nil, logging.LogTrace(err)
 	}
 	return &res, nil
 }
 
 func (repo PageRepo) CreateOne(Page *database.Page) error {
 	if err := repo.db.Create(Page).Error; err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }
@@ -69,13 +70,13 @@ func (repo PageRepo) UpsertAll(pages *[]database.Page) error {
 		for _, page := range *pages {
 			err := tx.Save(page).Error
 			if err != nil {
-				return logTrace(err)
+				return logging.LogTrace(err)
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }
@@ -83,7 +84,7 @@ func (repo PageRepo) UpsertAll(pages *[]database.Page) error {
 func (repo PageRepo) DeleteOne(PageId string) error {
 	exist, err := repo.Exists(PageId)
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 
 	if !exist {
@@ -92,7 +93,7 @@ func (repo PageRepo) DeleteOne(PageId string) error {
 
 	err = repo.db.Where("id = ?", PageId).Delete(&database.Page{}).Error
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }

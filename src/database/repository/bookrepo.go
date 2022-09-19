@@ -3,6 +3,7 @@ package repository
 import (
 	"fmt"
 	"github.com/alloba/TheLibrarian/database"
+	"github.com/alloba/TheLibrarian/logging"
 	"gorm.io/gorm"
 )
 
@@ -18,7 +19,7 @@ func (repo BookRepo) FindOneByName(bookName string) (*database.Book, error) {
 	res := database.Book{}
 	err := repo.db.Where("name = ?", bookName).First(&res).Error
 	if err != nil {
-		return nil, logTrace(err)
+		return nil, logging.LogTrace(err)
 	}
 	return &res, nil
 }
@@ -31,7 +32,7 @@ func (repo BookRepo) Exists(bookId string) (bool, error) {
 		Find(&exists).Error
 
 	if err != nil {
-		return false, logTrace(err)
+		return false, logging.LogTrace(err)
 	}
 	return exists, nil
 }
@@ -44,7 +45,7 @@ func (repo BookRepo) ExistsByName(bookName string) (bool, error) {
 		Find(&exists).Error
 
 	if err != nil {
-		return false, logTrace(err)
+		return false, logging.LogTrace(err)
 	}
 	return exists, nil
 }
@@ -52,22 +53,22 @@ func (repo BookRepo) ExistsByName(bookName string) (bool, error) {
 func (repo BookRepo) ExistAndFetchByName(bookName string) (*database.Book, error) {
 	exist, err := repo.ExistsByName(bookName)
 	if err != nil {
-		return nil, logTrace(err)
+		return nil, logging.LogTrace(err)
 	}
 	if !exist {
-		return nil, logTrace(fmt.Errorf("cannot fetch book [%v] that does not exist", bookName))
+		return nil, logging.LogTrace(fmt.Errorf("cannot fetch book [%v] that does not exist", bookName))
 	}
 
 	book, err := repo.FindOneByName(bookName)
 	if err != nil {
-		return nil, logTrace(err)
+		return nil, logging.LogTrace(err)
 	}
 	return book, nil
 }
 
 func (repo BookRepo) CreateOne(book *database.Book) error {
 	if err := repo.db.Create(book).Error; err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }
@@ -75,7 +76,7 @@ func (repo BookRepo) CreateOne(book *database.Book) error {
 func (repo BookRepo) DeleteOne(bookId string) error {
 	exist, err := repo.Exists(bookId)
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 
 	if !exist {
@@ -84,7 +85,7 @@ func (repo BookRepo) DeleteOne(bookId string) error {
 
 	err = repo.db.Where("id = ?", bookId).Delete(&database.Book{}).Error
 	if err != nil {
-		return logTrace(err)
+		return logging.LogTrace(err)
 	}
 	return nil
 }

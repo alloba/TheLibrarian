@@ -1,4 +1,4 @@
-package logging 
+package logging
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func logTrace(err error) error {
+func LogTrace(err error) error {
 	pc, _, _, ok := runtime.Caller(1)
 	if !ok {
 		return fmt.Errorf("ERR_CANNOT_TRACE_CALLER: %v", err.Error())
