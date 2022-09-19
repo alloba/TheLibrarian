@@ -76,6 +76,7 @@ func (service BookService) GetBookByID(bookId string) (*database.Book, error) {
 	}
 	return book, nil
 }
+
 func (service BookService) DeleteBookByName(bookName string) error {
 	exist, err := service.bookRepo.ExistsByName(bookName)
 	if err != nil {
@@ -110,4 +111,12 @@ func (service BookService) DeleteBookByID(bookId string) error {
 		return logging.LogTrace(err)
 	}
 	return nil
+}
+
+func (service BookService) ExistsByID(bookId string) (bool, error) {
+	exist, err := service.bookRepo.Exists(bookId)
+	if err != nil {
+		return false, logging.LogTrace(err)
+	}
+	return exist, nil
 }

@@ -39,6 +39,15 @@ func (repo EditionRepo) ExistByBookIdAndEditionNumber(bookId string, editionNumb
 	return exist, nil
 }
 
+func (repo EditionRepo) FindByID(editionId string) (*database.Edition, error) {
+	res := database.Edition{}
+	err := repo.db.Where("id = ?", editionId).First(&res).Error
+	if err != nil {
+		return nil, logging.LogTrace(err)
+	}
+	return &res, nil
+}
+
 func (repo EditionRepo) FindByBookIdAndEditionNumber(bookId string, editionNumber int) (*database.Edition, error) {
 	res := &database.Edition{}
 	err := repo.db.Where("book_id = ? and edition_number = ?", bookId, editionNumber).Find(res).Error
