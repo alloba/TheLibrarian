@@ -12,12 +12,24 @@ type BookRepo struct {
 }
 
 func NewBookRepo(db *gorm.DB) *BookRepo {
+	if db == nil {
+		panic("cannot use nil db")
+	}
 	return &BookRepo{db: db}
 }
 
 func (repo BookRepo) FindOneByName(bookName string) (*database.Book, error) {
 	res := database.Book{}
 	err := repo.db.Where("name = ?", bookName).First(&res).Error
+	if err != nil {
+		return nil, logging.LogTrace(err)
+	}
+	return &res, nil
+}
+
+func (repo BookRepo) FindOneByID(bookId string) (*database.Book, error) {
+	res := database.Book{}
+	err := repo.db.Where("id = ?", bookId).First(&res).Error
 	if err != nil {
 		return nil, logging.LogTrace(err)
 	}
