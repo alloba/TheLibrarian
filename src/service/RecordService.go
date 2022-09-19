@@ -13,12 +13,15 @@ type RecordService struct {
 }
 
 func NewRecordService(recordRepo *repository.RecordRepo) *RecordService {
+	if recordRepo == nil {
+		panic("cannot pass nil record repo")
+	}
 	return &RecordService{RecordRepo: recordRepo}
 }
 
 // CreateRecord will insert a new row into the database, based off of the provided FileContainer metadata.
 // Attempting to write a duplicate record will fail (although in the future it might be nice to simply skip the operation)
-func (service RecordService) CreateRecord(fileContainer FileContainer) error {
+func (service RecordService) CreateRecord(fileContainer *FileContainer) error {
 	exist, err := service.RecordRepo.Exists(fileContainer.Hash)
 	if err != nil {
 		return logging.LogTrace(err)
@@ -69,7 +72,7 @@ func (service RecordService) DeleteRecord(fileHash string) error {
 	if err != nil {
 		return logging.LogTrace(err)
 	}
-	if exist {
+	if !exist {
 		return nil
 	}
 

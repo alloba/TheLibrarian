@@ -11,6 +11,9 @@ type RecordRepo struct {
 }
 
 func NewRecordRepo(db *gorm.DB) *RecordRepo {
+	if db == nil {
+		panic("cannot pass nil db reference")
+	}
 	return &RecordRepo{db: db}
 }
 
