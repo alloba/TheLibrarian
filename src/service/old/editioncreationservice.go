@@ -1,4 +1,4 @@
-package service
+package old
 
 import (
 	"fmt"
@@ -10,13 +10,11 @@ import (
 	"time"
 )
 
-
 //TODO this class is due for a major rework. I'd like to compose services together for most of this functionality,
-// instead of pulling in a variety of repo interfaces. 
-// as part of that, i'd really like a clean way to consolidate everything into a single transaction for the 
-// database, but at this point I think even if I cant find a nice way, i'll just accept the risk of 
+// instead of pulling in a variety of repo interfaces.
+// as part of that, i'd really like a clean way to consolidate everything into a single transaction for the
+// database, but at this point I think even if I cant find a nice way, i'll just accept the risk of
 // unclean data. (the codebase overall is tight enough to minimize risk enough for a side project).
-
 
 type EditionCreationService struct {
 	repoManager *repository.RepoManager
