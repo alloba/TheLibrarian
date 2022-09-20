@@ -82,3 +82,11 @@ func (service RecordService) DeleteRecord(fileHash string) error {
 	}
 	return nil
 }
+
+func (service RecordService) ExistsByID(recordId string) (bool, error) {
+	exist, err := service.RecordRepo.Exists(recordId)
+	if err != nil {
+		return false, logging.LogTrace(err)
+	}
+	return exist, nil
+}

@@ -70,7 +70,7 @@ func (service EditionService) GetMostRecentEditionForBook(bookId string) (*datab
 	if err != nil {
 		return nil, logging.LogTrace(err)
 	}
-	edition, err := service.editionRepo.FindByBookIdAndEditionNumber(bookId, nextEdition-1) //can never be 0, so subtraction is fine
+	edition, err := service.editionRepo.FindByBookIdAndEditionNumber(bookId, nextEdition-1) //should never be 0, so subtraction is fine
 	if err != nil {
 		return nil, logging.LogTrace(err)
 	}

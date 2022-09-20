@@ -22,7 +22,7 @@ func TestRecordService_CreateRecord(t *testing.T) {
 	}
 
 	recordRepo := repository.NewRecordRepo(db)
-	fileContainer, err := fileService.createFileContainer("RecordService_test.go") //this file.
+	fileContainer, err := fileService.CreateFileContainer("RecordService_test.go") //this file.
 	if err != nil {
 		panic(fmt.Errorf("failed during test init -- cannot create fileContainer - %v", err))
 	}
@@ -58,7 +58,7 @@ func TestRecordService_DeleteRecord(t *testing.T) {
 	}
 
 	recordRepo := repository.NewRecordRepo(db)
-	fileContainer, err := fileService.createFileContainer("RecordService_test.go") //this file.
+	fileContainer, err := fileService.CreateFileContainer("RecordService_test.go") //this file.
 	if err != nil {
 		panic(fmt.Errorf("failed during test init -- cannot create fileContainer - %v", err))
 	}
@@ -98,7 +98,7 @@ func TestRecordService_GetRecord(t *testing.T) {
 	}
 
 	recordRepo := repository.NewRecordRepo(db)
-	fileContainer, err := fileService.createFileContainer("RecordService_test.go") //this file.
+	fileContainer, err := fileService.CreateFileContainer("RecordService_test.go") //this file.
 	if err != nil {
 		panic(fmt.Errorf("failed during test init -- cannot create fileContainer - %v", err))
 	}

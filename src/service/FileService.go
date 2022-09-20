@@ -38,7 +38,7 @@ func NewFileService(archiveBasePath string) *FileService {
 func (service FileService) WriteContainerToArchive(container *FileContainer) error {
 	childContainers := make([]FileContainer, 0)
 	if container.IsDir {
-		childs, err := service.getChildrenContainers(container, true)
+		childs, err := service.GetChildrenContainers(container, true)
 		if err != nil {
 			return logging.LogTrace(err)
 		}
@@ -110,7 +110,7 @@ func (service FileService) doesFileExistInArchive(hash string) (bool, error) {
 //   with a flag that marks if it is a directory (this flag must be checked manually before file operations take place)
 // This function represents a relatively expensive operation, since the file must be fully scanned to calculate a hash value for the container.
 // Target destination is preemptively assigned to the container as well, using the archive path passed to the service during initialization.
-func (service FileService) createFileContainer(path string) (*FileContainer, error) {
+func (service FileService) CreateFileContainer(path string) (*FileContainer, error) {
 	originPath, err := getQualifiedPath(path)
 	if err != nil {
 		return nil, logging.LogTrace(err)
@@ -185,7 +185,7 @@ func (service FileService) createFileContainer(path string) (*FileContainer, err
 // Create containers for all files that exist within the directory specified by the input container.
 // This is a comprehensive scan - all subdirectories are also examined for files.
 // Chains together calls to base function for creating a single file container
-func (service FileService) getChildrenContainers(container *FileContainer, onlyFiles bool) (*[]FileContainer, error) {
+func (service FileService) GetChildrenContainers(container *FileContainer, onlyFiles bool) (*[]FileContainer, error) {
 	x := make([]FileContainer, 0)
 	if !container.IsDir {
 		return &x, logging.LogTrace(fmt.Errorf("the provided container does not represent a directory"))
@@ -195,7 +195,7 @@ func (service FileService) getChildrenContainers(container *FileContainer, onlyF
 		if err != nil {
 			return err
 		}
-		childContainer, err := service.createFileContainer(path)
+		childContainer, err := service.CreateFileContainer(path)
 		if err != nil {
 			return err
 		}
@@ -284,4 +284,16 @@ func copyFile(sourcePath string, destinationPath string) error {
 
 	_, err = io.Copy(destination, source)
 	return nil
+}
+
+func (service FileService) GetSubpathOfContainer(sourceDir string, container *FileContainer) (string, error) {
+	absOrigin, err := getQualifiedPath(sourceDir)
+	if err != nil {
+		return "", logging.LogTrace(err)
+	}
+	absFile, err := getQualifiedPath(container.OriginPath)
+	if err != nil {
+		return "", logging.LogTrace(err)
+	}
+	return strings.TrimPrefix(absFile, absOrigin), nil
 }

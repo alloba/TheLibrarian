@@ -120,3 +120,11 @@ func (service BookService) ExistsByID(bookId string) (bool, error) {
 	}
 	return exist, nil
 }
+
+func (service BookService) ExistByName(bookName string) (bool, error) {
+	exist, err := service.bookRepo.ExistsByName(bookName)
+	if err != nil {
+		return false, logging.LogTrace(err)
+	}
+	return exist, nil
+}
