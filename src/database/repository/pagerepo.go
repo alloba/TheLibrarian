@@ -49,9 +49,9 @@ func (repo PageRepo) FindOneByRecordAndEdition(recordId string, editionId string
 	return &res, nil
 }
 
-func (repo PageRepo) FindAllByChapterId(chapterId string) (*[]database.Page, error) {
+func (repo PageRepo) FindAllByEditionId(editionId string) (*[]database.Page, error) {
 	res := make([]database.Page, 0)
-	err := repo.db.Where("chapter_id = ?", chapterId).Find(&res).Error
+	err := repo.db.Where("edition_id = ?", editionId).Find(&res).Error
 	if err != nil {
 		return nil, logging.LogTrace(err)
 	}

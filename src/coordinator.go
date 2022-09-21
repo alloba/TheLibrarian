@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/alloba/TheLibrarian/database/repository"
 	"github.com/alloba/TheLibrarian/logging"
 	"github.com/alloba/TheLibrarian/service"
@@ -43,6 +44,11 @@ func (service ActionCoordinator) SubmitNewEdition(bookName string, editionName s
 		return logging.LogTrace(err)
 	}
 	return tx.Commit().Error
+}
+
+func (service ActionCoordinator) DownloadEdition(bookName string, editionNum int, destinationFolder string) error {
+	actionOperator := newActionInstance(service.db, service.archivePath)
+	return actionOperator.downloadEdition(bookName, editionNum, destinationFolder)
 }
 
 func newActionInstance(db *gorm.DB, archivePath string) *actionInstance {
@@ -134,10 +140,50 @@ func (service actionInstance) submitNewEdition(bookName string, editionName stri
 	return nil
 }
 
-//
+func (service actionInstance) downloadEdition(bookName string, editionNum int, destinationFolder string) error {
+	bookExist, err := service.bookService.ExistByName(bookName)
+	if err != nil {
+		return logging.LogTrace(err)
+	}
+	if !bookExist {
+		return logging.LogTrace(fmt.Errorf("book of given name %v does not exist", bookName))
+	}
+	book, err := service.bookService.GetBookByName(bookName)
+	if err != nil {
+		return logging.LogTrace(err)
+	}
+
+	editionExist, err := service.editionService.ExistByBookIdAndEditionNumber(book.ID, editionNum)
+	if err != nil {
+		return logging.LogTrace(err)
+	}
+	if !editionExist {
+		return logging.LogTrace(fmt.Errorf("edition %v does not exist for book %v", editionNum, bookName))
+	}
+	edition, err := service.editionService.FindByBookIdAndEditionNumber(book.ID, editionNum)
+	if err != nil {
+		return logging.LogTrace(err)
+	}
+
+	pages, err := service.pageService.FindAllByEditionId(edition.ID)
+	if err != nil {
+		return logging.LogTrace(err)
+	}
+	for _, page := range *pages {
+		record, err := service.recordService.GetRecord(page.RecordID)
+		if err != nil {
+			return logging.LogTrace(err)
+		}
+		err = service.fileService.DownloadPageRecord(destinationFolder, book, edition, &page, record)
+		if err != nil {
+			return logging.LogTrace(err)
+		}
+	}
+	return nil
+}
+
 //func (service actionInstance) DownloadPage(pageId string, destinationFolder string) error   {}
-//func (service actionInstance) DownloadEdition(bookName string, editionNum int, destinationFolder string) error {
-//}
+
 //func (service actionInstance) DownloadBook(bookName string, destinationFolder string) error {}
 
 //func GetBookInformation(bookName string) {}

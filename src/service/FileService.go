@@ -3,11 +3,13 @@ package service
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/alloba/TheLibrarian/database"
 	"github.com/alloba/TheLibrarian/logging"
 	"io"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -296,4 +298,25 @@ func (service FileService) GetSubpathOfContainer(sourceDir string, container *Fi
 		return "", logging.LogTrace(err)
 	}
 	return strings.TrimPrefix(absFile, absOrigin), nil
+}
+
+func (service FileService) DownloadPageRecord(destinationFolder string, book *database.Book, edition *database.Edition, page *database.Page, record *database.Record) error {
+	qualifiedDestination, err := getQualifiedPath(destinationFolder)
+	if err != nil {
+		return logging.LogTrace(err)
+	}
+	qualifiedDestination = qualifiedDestination + book.Name + " - " + strconv.Itoa(edition.EditionNumber) + string(os.PathSeparator)
+
+	fullPath := qualifiedDestination + page.RelativePath
+	if _, err := os.Stat(filepath.Dir(fullPath)); os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(fullPath), os.ModeDir)
+		if err != nil {
+			return logging.LogTrace(err)
+		}
+	}
+	err = copyFile(service.archiveBasePath+record.FilePointer, fullPath)
+	if err != nil {
+		return logging.LogTrace(err)
+	}
+	return nil
 }

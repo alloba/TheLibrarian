@@ -66,3 +66,11 @@ func (service PageService) FindByRecordAndEdition(recordId string, editionId str
 
 	return page, nil
 }
+
+func (service PageService) FindAllByEditionId(editionId string) (*[]database.Page, error) {
+	pages, err := service.pageRepo.FindAllByEditionId(editionId)
+	if err != nil {
+		return nil, logging.LogTrace(err)
+	}
+	return pages, nil
+}

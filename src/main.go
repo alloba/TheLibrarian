@@ -13,10 +13,14 @@ func main() {
 	log.Println("Initializing the Librarian")
 
 	var db = database.Connect("../out/library_integration_test.db")
-	//var recordRepo = database.NewRecordRepo(db)
-	//testRepoOperation(recordRepo)
 	coordinator := NewActionCoordinator(db, "../out/filebin/")
-	err := coordinator.SubmitNewEdition("testBook1", "", "./")
+
+	err := coordinator.SubmitNewEdition("testBook1", "downloadTest", "./")
+	if err != nil {
+		panic(logging.LogTrace(err))
+	}
+
+	err = coordinator.DownloadEdition("testBook1", 6, "../out/recovertarget")
 	if err != nil {
 		panic(logging.LogTrace(err))
 	}

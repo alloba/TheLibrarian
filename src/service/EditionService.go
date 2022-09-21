@@ -92,3 +92,20 @@ func (service EditionService) GetEditionByID(editionId string) (*database.Editio
 	}
 	return edition, nil
 }
+
+func (service EditionService) ExistByBookIdAndEditionNumber(bookId string, editionNumber int) (bool, error) {
+	exist, err := service.editionRepo.ExistByBookIdAndEditionNumber(bookId, editionNumber)
+	if err != nil {
+		return false, logging.LogTrace(err)
+	}
+
+	return exist, nil
+}
+
+func (service EditionService) FindByBookIdAndEditionNumber(bookId string, editionNumber int) (*database.Edition, error) {
+	edition, err := service.editionRepo.FindByBookIdAndEditionNumber(bookId, editionNumber)
+	if err != nil {
+		return nil, logging.LogTrace(err)
+	}
+	return edition, nil
+}
