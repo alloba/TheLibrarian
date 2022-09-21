@@ -15,6 +15,8 @@ import (
 
 type FileService struct {
 	archiveBasePath string
+	existingHashes  []string
+	archiveDirty    bool
 }
 
 type FileContainer struct {
@@ -29,15 +31,15 @@ type FileContainer struct {
 	SourceFileInfo  os.FileInfo
 }
 
-//TODO: i probably still need the concept of an association between page/record/filecontainer.
-
 func NewFileService(archiveBasePath string) *FileService {
 	return &FileService{
 		archiveBasePath: archiveBasePath,
+		existingHashes:  make([]string, 0),
+		archiveDirty:    true,
 	}
 }
 
-func (service FileService) WriteContainerToArchive(container *FileContainer) error {
+func (service *FileService) WriteContainerToArchive(container *FileContainer) error {
 	childContainers := make([]FileContainer, 0)
 	if container.IsDir {
 		childs, err := service.GetChildrenContainers(container, true)
@@ -65,7 +67,7 @@ func (service FileService) WriteContainerToArchive(container *FileContainer) err
 
 // Write the file represented by the passed in container to disk.
 //
-func (service FileService) copyFileToArchive(container *FileContainer) error {
+func (service *FileService) copyFileToArchive(container *FileContainer) error {
 	if !container.SourceFileInfo.Mode().IsRegular() {
 		return logging.LogTrace(fmt.Errorf("specified file is not regular [%v]", container.OriginPath))
 	}
@@ -82,29 +84,45 @@ func (service FileService) copyFileToArchive(container *FileContainer) error {
 	if err != nil {
 		return logging.LogTrace(err)
 	}
+	service.existingHashes = append(service.existingHashes, container.Hash)
 	return nil
 }
 
 // Check the archive folder for anything that matches the existing hash.
 // This relies on the stored files being named after their hash, to avoid needing to read all files in the directory repeatedly.
 // So here is yet another good reason to never mess with archive file names (not to mention db row association).
-func (service FileService) doesFileExistInArchive(hash string) (bool, error) {
-	var exist = false
+func (service *FileService) doesFileExistInArchive(hash string) (bool, error) {
+	if service.archiveDirty {
+		err := service.calculateArchiveHashes()
+		if err != nil {
+			return false, logging.LogTrace(err)
+		}
+	}
+	for _, hashStore := range service.existingHashes {
+		if hash == hashStore {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (service *FileService) calculateArchiveHashes() error {
+	fmt.Printf("Calculating archive hashes\n")
 	err := filepath.Walk(service.archiveBasePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
-			if hash == strings.Split(info.Name(), ".")[0] {
-				exist = true
-			}
+			hash := strings.Split(info.Name(), ".")[0]
+			service.existingHashes = append(service.existingHashes, hash)
 		}
 		return nil
 	})
 	if err != nil {
-		return false, logging.LogTrace(fmt.Errorf("could not scan for file - %v", err.Error()))
+		return logging.LogTrace(fmt.Errorf("error while gathering hashes - %v", err.Error()))
 	}
-	return exist, nil
+	service.archiveDirty = false
+	return nil
 }
 
 // Create file container representation of the provided path.
@@ -112,7 +130,7 @@ func (service FileService) doesFileExistInArchive(hash string) (bool, error) {
 //   with a flag that marks if it is a directory (this flag must be checked manually before file operations take place)
 // This function represents a relatively expensive operation, since the file must be fully scanned to calculate a hash value for the container.
 // Target destination is preemptively assigned to the container as well, using the archive path passed to the service during initialization.
-func (service FileService) CreateFileContainer(path string) (*FileContainer, error) {
+func (service *FileService) CreateFileContainer(path string) (*FileContainer, error) {
 	originPath, err := getQualifiedPath(path)
 	if err != nil {
 		return nil, logging.LogTrace(err)
@@ -187,7 +205,8 @@ func (service FileService) CreateFileContainer(path string) (*FileContainer, err
 // Create containers for all files that exist within the directory specified by the input container.
 // This is a comprehensive scan - all subdirectories are also examined for files.
 // Chains together calls to base function for creating a single file container
-func (service FileService) GetChildrenContainers(container *FileContainer, onlyFiles bool) (*[]FileContainer, error) {
+func (service *FileService) GetChildrenContainers(container *FileContainer, onlyFiles bool) (*[]FileContainer, error) {
+	paths := make([]string, 0)
 	x := make([]FileContainer, 0)
 	if !container.IsDir {
 		return &x, logging.LogTrace(fmt.Errorf("the provided container does not represent a directory"))
@@ -197,17 +216,22 @@ func (service FileService) GetChildrenContainers(container *FileContainer, onlyF
 		if err != nil {
 			return err
 		}
-		childContainer, err := service.CreateFileContainer(path)
-		if err != nil {
-			return err
-		}
-		if (childContainer.IsDir && onlyFiles == false) || (!childContainer.IsDir && onlyFiles == true) {
-			x = append(x, *childContainer)
-		}
+		paths = append(paths, path)
 		return nil
 	})
 	if err != nil {
 		return nil, logging.LogTrace(fmt.Errorf("could not form child containers - %v", err.Error()))
+	}
+
+	for index, pth := range paths {
+		fmt.Printf("Creating source containers %v/%v\n", index, len(paths))
+		childContainer, err := service.CreateFileContainer(pth)
+		if err != nil {
+			return nil, err
+		}
+		if (childContainer.IsDir && onlyFiles == false) || (!childContainer.IsDir && onlyFiles == true) {
+			x = append(x, *childContainer)
+		}
 	}
 	return &x, nil
 }
@@ -288,7 +312,7 @@ func copyFile(sourcePath string, destinationPath string) error {
 	return nil
 }
 
-func (service FileService) GetSubpathOfContainer(sourceDir string, container *FileContainer) (string, error) {
+func (service *FileService) GetSubpathOfContainer(sourceDir string, container *FileContainer) (string, error) {
 	absOrigin, err := getQualifiedPath(sourceDir)
 	if err != nil {
 		return "", logging.LogTrace(err)
@@ -300,7 +324,7 @@ func (service FileService) GetSubpathOfContainer(sourceDir string, container *Fi
 	return strings.TrimPrefix(absFile, absOrigin), nil
 }
 
-func (service FileService) DownloadPageRecord(destinationFolder string, book *database.Book, edition *database.Edition, page *database.Page, record *database.Record) error {
+func (service *FileService) DownloadPageRecord(destinationFolder string, book *database.Book, edition *database.Edition, page *database.Page, record *database.Record) error {
 	qualifiedDestination, err := getQualifiedPath(destinationFolder)
 	if err != nil {
 		return logging.LogTrace(err)

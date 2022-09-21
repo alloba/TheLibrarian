@@ -3,14 +3,14 @@ package database
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"log"
 )
 
 func Connect(connectionString string) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(connectionString), &gorm.Config{
-		Logger:                                   logger.Default.LogMode(logger.Info),
+		//Logger:                                   logger.Default.LogMode(logger.Info),
 	})
+	//TODO - configuration based log enabling.
 	if err != nil {
 		log.Panicf("Connect: unable to connect to database; %v", err.Error())
 	}

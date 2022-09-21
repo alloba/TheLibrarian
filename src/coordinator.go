@@ -75,6 +75,7 @@ func newActionInstance(db *gorm.DB, archivePath string) *actionInstance {
 }
 
 func (service actionInstance) submitNewEdition(bookName string, editionName string, sourceDirectory string) error {
+	fmt.Printf("Creating new edition for book %v using source %v\n", bookName, sourceDirectory)
 	directoryContainer, err := service.fileService.CreateFileContainer(sourceDirectory)
 	if err != nil {
 		return logging.LogTrace(err)
@@ -108,6 +109,7 @@ func (service actionInstance) submitNewEdition(bookName string, editionName stri
 	}
 
 	for _, container := range *allFilesContainers {
+		fmt.Printf("Copying file to archive - %v\n", container.OriginPath)
 		err = service.fileService.WriteContainerToArchive(&container)
 		if err != nil {
 			return logging.LogTrace(err)
@@ -141,6 +143,7 @@ func (service actionInstance) submitNewEdition(bookName string, editionName stri
 }
 
 func (service actionInstance) downloadEdition(bookName string, editionNum int, destinationFolder string) error {
+	fmt.Printf("Beginning download of book %v edition %v to destination %v\n", bookName, editionNum, destinationFolder)
 	bookExist, err := service.bookService.ExistByName(bookName)
 	if err != nil {
 		return logging.LogTrace(err)
@@ -174,6 +177,7 @@ func (service actionInstance) downloadEdition(bookName string, editionNum int, d
 		if err != nil {
 			return logging.LogTrace(err)
 		}
+		fmt.Printf("Downloading to destination - %v\n", page.RelativePath)
 		err = service.fileService.DownloadPageRecord(destinationFolder, book, edition, &page, record)
 		if err != nil {
 			return logging.LogTrace(err)

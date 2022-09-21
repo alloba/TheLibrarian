@@ -12,20 +12,24 @@ import (
 func main() {
 	log.Println("Initializing the Librarian")
 
-	var db = database.Connect("../out/library_integration_test.db")
-	coordinator := NewActionCoordinator(db, "../out/filebin/")
-
-	err := coordinator.SubmitNewEdition("testBook1", "downloadTest", "./")
-	if err != nil {
-		panic(logging.LogTrace(err))
-	}
-
-	err = coordinator.DownloadEdition("testBook1", 6, "../out/recovertarget")
-	if err != nil {
-		panic(logging.LogTrace(err))
-	}
+	runTestInstance()
 
 	log.Println("Terminating the Librarian")
+}
+
+func runTestInstance() {
+	var db = database.Connect("C:\\Users\\alexl\\projects\\TheLibrarian\\out\\library_integration_test.db")
+	coordinator := NewActionCoordinator(db, "C:\\Users\\alexl\\projects\\TheLibrarian\\out\\filebin\\")
+
+	//err := coordinator.SubmitNewEdition("books", "", "~/books")
+	//if err != nil {
+	//	panic(logging.LogTrace(err))
+	//}
+
+	err := coordinator.DownloadEdition("books", 10, "../out/recovertarget")
+	if err != nil {
+		panic(logging.LogTrace(err))
+	}
 }
 
 func launchWebserver() {
