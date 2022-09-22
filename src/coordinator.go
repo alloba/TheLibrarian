@@ -51,6 +51,11 @@ func (service ActionCoordinator) DownloadEdition(bookName string, editionNum int
 	return actionOperator.downloadEdition(bookName, editionNum, destinationFolder)
 }
 
+func (service ActionCoordinator) DownloadNewestEdition(bookName string, destinationFolder string) error {
+	actionOperator := newActionInstance(service.db, service.archivePath)
+	return actionOperator.downloadNewestEdition(bookName, destinationFolder)
+}
+
 func newActionInstance(db *gorm.DB, archivePath string) *actionInstance {
 	pagerepo := repository.NewPageRepo(db)
 	editionrepo := repository.NewEditionRepo(db)
@@ -184,6 +189,18 @@ func (service actionInstance) downloadEdition(bookName string, editionNum int, d
 		}
 	}
 	return nil
+}
+
+func (service actionInstance) downloadNewestEdition(bookName string, destinationFolder string) error {
+	book, err := service.bookService.GetBookByName(bookName)
+	if err != nil {
+		return err
+	}
+	edition, err := service.editionService.GetMostRecentEditionForBook(book.ID)
+	if err != nil {
+		return logging.LogTrace(err)
+	}
+	return service.downloadEdition(bookName, edition.EditionNumber, destinationFolder)
 }
 
 //func (service actionInstance) DownloadPage(pageId string, destinationFolder string) error   {}

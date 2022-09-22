@@ -32,8 +32,12 @@ type FileContainer struct {
 }
 
 func NewFileService(archiveBasePath string) *FileService {
+	archiveFullPath, err := getQualifiedPath(archiveBasePath)
+	if err != nil {
+		panic(logging.LogTrace(err))
+	}
 	return &FileService{
-		archiveBasePath: archiveBasePath,
+		archiveBasePath: archiveFullPath,
 		existingHashes:  make([]string, 0),
 		archiveDirty:    true,
 	}
